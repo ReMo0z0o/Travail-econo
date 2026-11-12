@@ -407,3 +407,6 @@ td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
    une formule centrée reste d'un seul tenant et défile dans son cadre. */
 .math { white-space: normal; }
 .equation .math, .formule-grande .math, td .math, th .math { white-space: nowrap; }
+
+/* Dans une étiquette en capitales, le code garde sa casse : R distingue summary() de SUMMARY(). */
+.etiquette code { text-transform: none; letter-spacing: 0; }

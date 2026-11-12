@@ -132,7 +132,7 @@ lrev         1.607820   0.074037 21.7165 < 2.2e-16 ***
 
 `Estimate` est le coefficient, `Std. Error` son erreur-type, `t value` leur rapport, `Pr(>|t|)` la p-valeur. L'intervalle de confiance à 95 % : coefficient ± 1,96 × erreur-type.
 
-:::piege summary() ne donne pas les bonnes erreurs-types
+:::piege Les erreurs-types affichées par défaut ne sont pas les bonnes
 `summary(lm(...))` affiche les erreurs-types **classiques**, qui supposent l'homoscédasticité. Pour le modèle log-log de la question 1.6, elle annonce 0,081 là où l'erreur-type HC1 vaut 0,149 : presque moitié moins. N'utilise `summary()` que pour le R² : `summary(m)$r.squared`.
 :::
 
