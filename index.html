@@ -413,6 +413,11 @@ a.carte:hover { border-color: var(--accent); color: var(--ink); }
 .bref .equation { padding-block: 6px; }
 td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
 
+/* Une formule en ligne peut passer à la ligne (sinon elle élargit la page sur téléphone) ;
+   une formule centrée reste d'un seul tenant et défile dans son cadre. */
+.math { white-space: normal; }
+.equation .math, .formule-grande .math, td .math, th .math { white-space: nowrap; }
+
 </style>
 </head>
 <body>
