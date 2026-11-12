@@ -251,7 +251,7 @@
     ['lecture', '1.1', 'Lignes et colonnes lues : `dim(immo_raw)` puis `dim(fisc_raw)`', '286 120 × 13 puis 11 039 × 49'],
     ['communes', '1.1', 'Communes dans le fichier des ventes / dans le fichier fiscal', '565 / 581'],
     ['orphelines', '1.1', 'Communes sans correspondance : ventes seulement / fiscal seulement', '13 / 29'],
-    ['base', '1.1', 'Base d’analyse', '551 communes (281 en Flandre, 251 en Wallonie, 19 à Bruxelles)'],
+    ['base', '1.1', 'Base d’analyse : communes au total, puis Flandre / Wallonie / Bruxelles', '551, puis 281 / 251 / 19'],
     ['mediane', '1.3', 'Erreur-type de la médiane : Rouvroy / Charleroi', '38 796 € / 1 944 €'],
     ['asymetrie', '1.4', 'Asymétrie du prix / de `ln(prix)`', '1,338 / −0,007'],
     ['loglog', '1.6', 'Élasticité du modèle log-log (erreur-type HC1)', '1,4443 (0,1494)'],

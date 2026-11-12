@@ -41,6 +41,14 @@ node tests/fumee.cjs
 
 ouvre toutes les pages dans Chromium et signale toute erreur (nécessite Playwright).
 
+```bash
+node tests/parcours.cjs
+```
+
+rejoue le parcours d'une personne qui utilise l'atelier : choisir un raisonnement, rédiger sa version,
+marquer une question comme maîtrisée, retrouver ses choix dans « Mon rapport », recharger la page,
+chercher un mot, ouvrir une définition, manipuler un outil, ouvrir le menu sur téléphone.
+
 ## Données
 
 Statbel (ventes immobilières et statistique fiscale des revenus, 2023), recensement américain de 1980
