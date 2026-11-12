@@ -38,9 +38,11 @@
     const d = donneesDe(id);
     if (!d) return;
     f.enCours = collection.doc(id).set(JSON.parse(JSON.stringify(d)))
-      .catch(function (e) {
+      .then(function () { f.essais = 0; }, function (e) {
+        // Panne passagère : un seul nouvel essai, après un délai aléatoire. La copie du navigateur reste à jour.
+        if (e && e.code === 'unavailable') { if (!f.essais) { f.essais = 1; setTimeout(function () { pousser(id); }, 1500 + Math.random() * 1500); } return; }
         // Écriture refusée (lecteur en lecture seule, quota…) : on reste sur le navigateur pour cette visite.
-        if (!e || e.code !== 'unavailable') { collection = null; if (mode === 'compte') mode = 'local'; notifier('mode'); }
+        collection = null; if (mode === 'compte') mode = 'local'; notifier('mode');
       })
       .then(function () { f.enCours = null; if (f.attente && collection) { f.attente = false; pousser(id); } });
   }

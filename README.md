@@ -49,6 +49,13 @@ rejoue le parcours d'une personne qui utilise l'atelier : choisir un raisonnemen
 marquer une question comme maîtrisée, retrouver ses choix dans « Mon rapport », recharger la page,
 chercher un mot, ouvrir une définition, manipuler un outil, ouvrir le menu sur téléphone.
 
+```bash
+node tests/compte.cjs
+```
+
+vérifie la sauvegarde des notes dans l'espace privé du lecteur quand la page est ouverte comme
+artifact claude.ai, à l'aide d'un faux `window.claude` (écriture, relecture, panne passagère, refus).
+
 ## Données
 
 Statbel (ventes immobilières et statistique fiscale des revenus, 2023), recensement américain de 1980
