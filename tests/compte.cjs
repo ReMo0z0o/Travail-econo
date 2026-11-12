@@ -8,6 +8,8 @@ const { chromium } = require('playwright');
 // Faux window.claude : un magasin de fiches en mémoire, avec de quoi simuler une panne ou un refus.
 const FAUX = `
   window.__faux = { fiches: __FICHES__, ecritures: [], panne: 0, refus: false, chemins: [] };
+  // Comme le vrai magasin, le faux livre des fiches figées en profondeur.
+  const geler = function (o) { if (o && typeof o === 'object') { Object.keys(o).forEach(function (k) { geler(o[k]); }); Object.freeze(o); } return o; };
   window.claude = { use: function (nom) {
     const F = window.__faux;
     if (nom === 'user') return Promise.resolve({ id: function () { return Promise.resolve('u_test'); } });
@@ -15,7 +17,7 @@ const FAUX = `
     if (nom === 'db') return Promise.resolve({ collection: function (chemin) {
       F.chemins.push(chemin);
       return {
-        get: function () { return Promise.resolve({ docs: Object.keys(F.fiches).map(function (id) { return { id: id, exists: true, data: function () { return F.fiches[id]; } }; }) }); },
+        get: function () { return Promise.resolve({ docs: Object.keys(F.fiches).map(function (id) { return { id: id, exists: true, data: function () { return geler(JSON.parse(JSON.stringify(F.fiches[id]))); } }; }) }); },
         doc: function (id) { return { set: function (corps) {
           if (F.refus) return Promise.reject({ code: 'invalid_argument', message: 'refus' });
           if (F.panne > 0) { F.panne--; return Promise.reject({ code: 'unavailable', message: 'panne' }); }
@@ -56,11 +58,16 @@ const FAUX = `
   await ctx.close();
 
   // 2. Retour sur un autre appareil : le compte contient déjà une fiche, le navigateur est vide.
-  ({ ctx, page } = await ouvrir({ 'q-2-8': { t: Date.now(), fait: true, s: { a: { opt: '', txt: 'mon texte', ok: true } }, quiz: {} } }));
+  ({ ctx, page } = await ouvrir({ 'q-2-8': { t: Date.now(), fait: true, s: { a: { opt: '', txt: 'mon texte', ok: true } }, quiz: {} }, sonde: { n: 1 }, 'q-2-9': { t: 5 } }));
+  verifier((await page.evaluate(() => Object.keys(window.A.store.etat.q).sort().join(','))) === '2.8,2.9', 'une fiche inattendue est ignorée, une fiche incomplète est remise en forme');
   verifier((await page.locator('#progression').innerText()).includes('1 / 41'), 'la progression vient du compte (1 / 41)');
   await page.evaluate(() => { location.hash = '#q-2-8'; }); await page.waitForTimeout(350);
   verifier((await page.locator('.maversion textarea').first().inputValue()) === 'mon texte', 'le texte rédigé ailleurs est rechargé');
   verifier((await page.evaluate(() => window.__faux.ecritures.length)) === 0, 'aucune écriture tant que rien ne change');
+  await page.locator('.maversion textarea').first().fill('mon texte, complété');
+  await page.waitForTimeout(1900);
+  f = await page.evaluate(() => window.__faux);
+  verifier(f.ecritures.includes('q-2-8') && f.fiches['q-2-8'].s.a.txt === 'mon texte, complété', 'une fiche venue du compte reste modifiable, et la modification y retourne');
 
   // 3. Panne passagère : un nouvel essai, un seul, et la fiche finit par arriver.
   await page.evaluate(() => { window.__faux.panne = 1; });

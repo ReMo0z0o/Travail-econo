@@ -949,13 +949,22 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     let change = false;
     const vus = {};
     instantane.docs.forEach(function (doc) {
-      const d = doc.data(); if (!d) return;
+      const lu = doc.data(); if (!lu || typeof lu !== 'object') return;
+      // Les fiches livrées par le magasin sont figées : on travaille toujours sur une copie.
+      let brut; try { brut = JSON.parse(JSON.stringify(lu)); } catch (e) { return; }
+      // On ne reprend que les fiches que cette page écrit elle-même, remises en forme : une fiche
+      // inconnue ou incomplète ne doit jamais empêcher l'affichage.
+      const estQuestion = /^q-\d+-\d+$/.test(doc.id);
+      if (!estQuestion && doc.id !== 'oral' && doc.id !== 'ui') return;
+      const objet = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+      const t = typeof brut.t === 'number' ? brut.t : 0;
+      const d = estQuestion ? { t: t, fait: !!brut.fait, s: objet(brut.s), quiz: objet(brut.quiz) } : doc.id === 'oral' ? { t: t, c: objet(brut.c) } : Object.assign({}, brut, { t: t });
       vus[doc.id] = true;
       const local = donneesDe(doc.id);
-      if (!local || (d.t || 0) > (local.t || 0)) {
+      if (!local || t > (local.t || 0)) {
         if (doc.id === 'oral') etat.oral = d; else if (doc.id === 'ui') etat.ui = d; else etat.q[doc.id.slice(2).replace('-', '.')] = d;
         change = true;
-      } else if ((local.t || 0) > (d.t || 0)) pousser(doc.id);
+      } else if ((local.t || 0) > t) pousser(doc.id);
     });
     // Ce qui n'existe que dans le navigateur est recopié dans le compte.
     Object.keys(etat.q).forEach((qid) => { if (!vus[docId(qid)] && etat.q[qid].t) pousser(docId(qid)); });
