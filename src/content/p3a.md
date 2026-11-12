@@ -44,7 +44,7 @@ La première différence retire ce qui distingue durablement les deux groupes. L
 
 ### Le résultat en une phrase
 
-L'arrivée du réseau augmente de **38 points de pourcentage** la part des localités visibles de nuit (de 5 % à 44 %), et le nombre d'écoles électrifiées, sans effet détectable sur le nombre d'élèves.
+L'arrivée du réseau augmente de **38 points de pourcentage** la part des localités visibles de nuit (de 5 % à 44 %). L'effet estimé sur les écoles électrifiées est positif mais fragile, et rien n'apparaît sur le nombre d'élèves.
 
 #SEC A | Données et groupes
 

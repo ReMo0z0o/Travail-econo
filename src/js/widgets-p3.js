@@ -62,6 +62,11 @@
   A.widgets.tendances = function (el) {
     const g = A.gabarit(el, 'Les deux groupes année par année', 'Avant 2008, les deux courbes évoluent-elles de la même façon ? La zone grisée (2008-2009) correspond aux années de raccordement du groupe traité, exclues de l’estimation.');
     const VARS = { nl_extensive: ['Localités éclairées (nl_extensive)', (v) => fmt(100 * v, 0) + ' %', (v) => fmt(100 * v, 1) + ' %'], nl_intensive_hat: ['Intensité lumineuse (nl_intensive_hat)', (v) => fmt(v, 1), (v) => fmt(v, 3)], nschool_elec: ['Écoles primaires électrifiées', (v) => fmt(v, 1), (v) => fmt(v, 2)], n_students_public: ['Élèves du primaire public', (v) => fmt(v, 0), (v) => fmt(v, 1)] };
+    const LECT = {
+      nl_intensive_hat: 'Variable définie seulement pour les localités éclairées au moins une fois (139 sur 297). Chez les traitées, l’intensité monte déjà un peu avant 2008 (de −0,01 à 0,21), alors que le groupe de comparaison reste plat : pour cette variable, les tendances parallèles sont moins nettes.',
+      nschool_elec: 'Variable disponible jusqu’en 2012 seulement. Regarde la chute entre 2005 et 2006, dans les <b>deux</b> groupes : elle ressemble à un changement dans le relevé de la variable. La période « avant » mélange deux régimes, ce qui fragilise l’estimation de la question 3.5 (a).',
+      n_students_public: 'Variable disponible jusqu’en 2012 seulement. Le nombre d’élèves baisse dans les deux groupes après 2007 ; rien n’indique que les localités raccordées en gagnent.'
+    };
     const etat = { v: 'nl_extensive', tiers: false, k: 2005 };
     const serie = (t, v) => AN.map((a) => { const l = E.series.find((r) => r.treated === t && r.year === a); return l && l[v] != null ? l[v] : null; });
     const milieu = AN.map((a, j) => { let sm = 0, n = 0; E.loc.forEach(([an, , nl]) => { if (an >= 2010 && an <= 2014 && nl[j] !== '-') { sm += +nl[j]; n++; } }); return sm / n; });
@@ -88,9 +93,11 @@
       const tracer = (ys, t, c) => { const P = AN.map((a, i) => [a, ys[i]]).filter((q) => q[1] != null); G.chemin(P, t); P.forEach((q) => G.point(q[0], q[1], c, 3.6)); };
       tracer(Cm, 't2', 'c2'); if (tiers) tracer(milieu, 't3', 'c3'); tracer(T, 't1', 'c1');
       G.reticule(AN, (i) => [String(AN[i]), [['Traitées', T[i] == null ? 'non disponible' : VARS[v][2](T[i])], ['Comparaison', Cm[i] == null ? 'non disponible' : VARS[v][2](Cm[i])]].concat(tiers ? [['Électrifiées 2010-2014', VARS[v][2](milieu[i])]] : [])]);
-      g.lecture.innerHTML = v === 'nl_extensive' ? '<p>De 2003 à 2007, les deux courbes sont basses et quasi plates, avec un écart stable de 2 à 3 points. Après le raccordement, les traitées passent à ' + fmt(100 * T[7], 1) + ' % en 2010, puis bondissent à ' + fmt(100 * T[9], 1) + ' % en 2012, l’année où le satellite VIIRS, plus sensible, entre dans la série. Le groupe de comparaison reste sous ' + fmt(100 * Math.max.apply(null, Cm) + 0.5, 0) + ' %.' + (tiers ? ' La courbe verte montre pourquoi on n’utilise pas les localités raccordées en 2010-2014 comme témoins : elles s’allument à leur tour pendant la période « après ».' : '') + '</p>' : '<p>' + (v === 'nl_intensive_hat' ? 'Variable définie seulement pour les localités éclairées au moins une fois (139 sur 297).' : 'Variable scolaire disponible jusqu’en 2012 seulement : la période « après » se réduit à 2010-2012.') + '</p>';
+      g.lecture.innerHTML = v === 'nl_extensive' ? '<p>De 2003 à 2007, les deux courbes sont basses et quasi plates : l’écart va de 1 à 4 points, et une localité traitée pèse à elle seule 1,7 point. Après le raccordement, les traitées passent à ' + fmt(100 * T[7], 1) + ' % en 2010, puis bondissent à ' + fmt(100 * T[9], 1) + ' % en 2012, l’année où le satellite VIIRS, plus sensible, entre dans la série. Le groupe de comparaison reste sous ' + fmt(100 * Math.max.apply(null, Cm) + 0.5, 0) + ' %.' + (tiers ? ' La courbe verte montre pourquoi on n’utilise pas les localités raccordées en 2010-2014 comme témoins : elles s’allument à leur tour pendant la période « après ».' : '') + '</p>' : '<p>' + LECT[v] + '</p>';
     }
-    g.apres.append(A.vueTable('Voir les moyennes annuelles (nl_extensive)', ['Année', 'Traitées', 'Comparaison', 'Électrifiées 2010-2014'], AN.map((a, i) => [a, fmt(100 * serie(1, 'nl_extensive')[i], 1) + ' %', fmt(100 * serie(0, 'nl_extensive')[i], 1) + ' %', fmt(100 * milieu[i], 1) + ' %'])));
+    const nd = (x, f) => (x == null ? 'non disponible' : f(x));
+    g.apres.append(A.vueTable('Voir les moyennes annuelles des quatre variables', ['Année', 'Éclairées, traitées', 'Éclairées, comparaison', 'Éclairées, 2010-2014', 'Intensité, traitées', 'Intensité, comparaison', 'Écoles, traitées', 'Écoles, comparaison', 'Élèves, traitées', 'Élèves, comparaison'],
+      AN.map((a, i) => [a, fmt(100 * serie(1, 'nl_extensive')[i], 1) + ' %', fmt(100 * serie(0, 'nl_extensive')[i], 1) + ' %', fmt(100 * milieu[i], 1) + ' %'].concat(['nl_intensive_hat', 'nschool_elec', 'n_students_public'].flatMap((k) => [nd(serie(1, k)[i], VARS[k][2]), nd(serie(0, k)[i], VARS[k][2])])))));
     A.adapter(g.zone, dessiner); majPlacebo();
   };
 
@@ -121,13 +128,13 @@
 
   // ---------------------------------------------- 3.8 erreurs-types groupées
   A.widgets.cluster = function (el) {
-    const g = A.gabarit(el, 'Pourquoi grouper les erreurs-types ? Une simulation sans aucun effet', 'On simule 400 panels identiques au tien (59 localités traitées, 238 de comparaison, 5 années avant, 5 après), mais où l’électrification n’a **aucun effet**. Les erreurs d’une même localité sont corrélées d’une année à l’autre avec la force que tu choisis.');
-    const etat = { rho: 0.66 }, GT = 59, GC = 238, T = 10, R = 400;
+    const g = A.gabarit(el, 'Pourquoi grouper les erreurs-types ? Une simulation sans aucun effet', 'On simule 600 panels identiques au tien (59 localités traitées, 238 de comparaison, 5 années avant, 5 après), mais où l’électrification n’a **aucun effet**. Les erreurs d’une même localité sont corrélées d’une année à l’autre avec la force que tu choisis.');
+    const etat = { rho: 0.66 }, GT = 59, GC = 238, T = 10, R = 600;
     g.commandes.append(A.curseur('Corrélation des erreurs d’une année à l’autre', 0, 0.95, 0.01, etat.rho, (v) => fmt(v, 2), A.debounce((v) => { etat.rho = v; dessiner(); }, 60)),
       h('button', { class: 'btn petit', type: 'button', onclick: (ev) => { etat.rho = 0.66; ev.target.closest('.commandes').querySelector('.commande').regler(0.66); dessiner(); } }, 'Valeur de tes données (0,66)'));
     function simuler() {
-      const u = A.alea(Math.round(etat.rho * 1000) + 11), G = GT + GC, n = G * T, y = new Float64Array(n), rho = etat.rho, k = Math.sqrt(1 - rho * rho);
-      const est = []; let sHC = 0, sCL = 0, rejHC = 0, rejCL = 0;
+      const u = A.alea(Math.round(etat.rho * 1000) + 7), G = GT + GC, n = G * T, y = new Float64Array(n), rho = etat.rho, k = Math.sqrt(1 - rho * rho);
+      let sHC = 0, sCL = 0, rejHC = 0, rejCL = 0;
       for (let r = 0; r < R; r++) {
         const sm = [0, 0, 0, 0];
         for (let i = 0; i < G; i++) { let e = u.normale(); const tr = i < GT ? 2 : 0; for (let t = 0; t < T; t++) { if (t) e = rho * e + k * u.normale(); y[i * T + t] = e; sm[tr + (t >= 5 ? 1 : 0)] += e; } }
@@ -135,16 +142,18 @@
         let vHC = 0, vCL = 0;
         for (let i = 0; i < G; i++) { const tr = i < GT ? 2 : 0; let sg = 0; for (let t = 0; t < T; t++) { const c = tr + (t >= 5 ? 1 : 0), signe = (c === 3 || c === 0) ? 1 : -1, psi = signe * (y[i * T + t] - mo[c]) / nc[c]; vHC += psi * psi; sg += psi; } vCL += sg * sg; }
         const seHC = Math.sqrt(vHC * n / (n - 4)), seCL = Math.sqrt(vCL * (G / (G - 1)) * ((n - 1) / (n - 4)));
-        est.push(dd); sHC += seHC; sCL += seCL; if (Math.abs(dd / seHC) > 1.96) rejHC++; if (Math.abs(dd / seCL) > 1.96) rejCL++;
+        sHC += seHC; sCL += seCL; if (Math.abs(dd / seHC) > 1.96) rejHC++; if (Math.abs(dd / seCL) > 1.96) rejCL++;
       }
-      return { vrai: S.ecartType(est), hc: sHC / R, cl: sCL / R, rejHC: rejHC / R, rejCL: rejCL / R };
+      // Dispersion exacte de la double différence pour des erreurs AR(1) de variance 1.
+      let v = 0; for (let a = 0; a < T; a++) for (let b = 0; b < T; b++) v += (a >= 5 ? 1 : -1) * (b >= 5 ? 1 : -1) * Math.pow(rho, Math.abs(a - b));
+      return { vrai: Math.sqrt(v / 25 * (1 / GT + 1 / GC)), hc: sHC / R, cl: sCL / R, rejHC: rejHC / R, rejCL: rejCL / R };
     }
     function dessiner() {
       const r = simuler(), max = Math.max(r.vrai, r.hc, r.cl) * 1.3;
       const NOMS = ['Dispersion réelle des estimations', 'Erreur-type HC1 (moyenne)', 'Erreur-type groupée (moyenne)'], COURT = ['Réelle', 'HC1', 'Groupée'], etroit = (g.zone.clientWidth || 680) < 520;
       const G = A.graphe(g.zone, { nom: 'Dispersion réelle des estimations comparée aux erreurs-types HC1 et groupées', ratio: 0.38, hmin: 210, hmax: 280, x: { dom: [0.4, 3.6], grad: [1, 2, 3], fmt: (v) => (etroit ? COURT : NOMS)[v - 1] }, y: { dom: [0, max], fmt: (v) => fmt(v, 3) } }).axes();
       [[r.vrai, 'cink'], [r.hc, 'c2'], [r.cl, 'c1']].forEach(([v, c], i) => { G.barre(i + 1, v, 24, c); G.texte(i + 1, v, fmt(v, 4), { ancre: 'middle', dy: -7 }); });
-      g.lecture.innerHTML = '<p>Avec une corrélation de <b>' + fmt(etat.rho, 2) + '</b> : la vraie dispersion des estimations est de ' + fmt(r.vrai, 4) + '. L’erreur-type HC1, qui traite les 2 970 observations comme indépendantes, annonce ' + fmt(r.hc, 4) + ' (' + fmt(100 * r.hc / r.vrai, 0) + ' % de la réalité) ; l’erreur-type groupée par localité annonce ' + fmt(r.cl, 4) + ' (' + fmt(100 * r.cl / r.vrai, 0) + ' %).</p><p>Conséquence : alors qu’il n’y a aucun effet, un test à 5 % en « trouve » un dans <b>' + fmt(100 * r.rejHC, 0) + ' %</b> des simulations avec HC1, contre ' + fmt(100 * r.rejCL, 0) + ' % avec les erreurs groupées (on attend 5 %). ' + (etat.rho < 0.05 ? 'Sans corrélation, les deux erreurs-types se valent.' : 'Plus les erreurs persistent, plus HC1 surestime l’information réellement disponible.') + '</p>';
+      g.lecture.innerHTML = '<p>Avec une corrélation de <b>' + fmt(etat.rho, 2) + '</b> : la vraie dispersion des estimations est de ' + fmt(r.vrai, 4) + '. L’erreur-type HC1, qui traite les 2 970 observations comme indépendantes, annonce ' + fmt(r.hc, 4) + ' (' + fmt(100 * r.hc / r.vrai, 0) + ' % de la réalité) ; l’erreur-type groupée par localité annonce ' + fmt(r.cl, 4) + ' (' + fmt(100 * r.cl / r.vrai, 0) + ' %).</p><p>Conséquence : alors qu’il n’y a aucun effet, un test à 5 % en « trouve » un dans <b>' + fmt(100 * r.rejHC, 0) + ' %</b> des simulations avec HC1, contre ' + fmt(100 * r.rejCL, 0) + ' % avec les erreurs groupées (on attend 5 %). ' + (r.cl > r.hc * 1.04 ? 'Les erreurs persistent : HC1 surestime l’information réellement disponible et annonce une précision qu’on n’a pas.' : r.cl < r.hc * 0.96 ? 'Persistance extrême : l’écart d’une localité à la moyenne est presque le même avant et après, et il s’annule dans la comparaison après − avant. HC1 est alors trop <em>grande</em>. L’erreur-type groupée suit la réalité dans les deux sens : c’est ce qui arrive dans tes données pour l’intensité lumineuse.' : 'Ici, les deux erreurs-types se valent.') + '</p>';
     }
     A.adapter(g.zone, dessiner);
   };
