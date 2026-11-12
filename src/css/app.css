@@ -395,3 +395,10 @@ a.carte:hover { border-color: var(--accent); color: var(--ink); }
 .zone-grise { fill: var(--surface-3); }
 .tirets { stroke-dasharray: 5 4; }
 .legende i.ligne, .legende i.tiret { border-radius: 0; }
+
+/* Tableaux et formules placés dans « la réponse en bref » (fond sombre). */
+.bref .table-boite { background: transparent; border-color: color-mix(in srgb, var(--bg) 28%, transparent); }
+.bref th { background: transparent; color: inherit; opacity: .75; }
+.bref th, .bref td { border-bottom-color: color-mix(in srgb, var(--bg) 22%, transparent); }
+.bref .equation { padding-block: 6px; }
+td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }

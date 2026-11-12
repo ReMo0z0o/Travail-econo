@@ -36,6 +36,8 @@
           buf += SYM[nom] != null ? SYM[nom] : m[0];
           continue;
         }
+        // "\_", "\%"… : le caractère suivant est pris tel quel.
+        if (i + 1 < s.length) { buf += s[i + 1]; i += 2; continue; }
       }
       if ((c === '_' || c === '^') && s[i + 1] === '{') {
         vider();
