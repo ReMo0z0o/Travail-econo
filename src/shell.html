@@ -1,0 +1,30 @@
+<div class="app" id="app">
+  <aside class="nav" id="nav" aria-label="Sommaire">
+    <a class="marque" href="#accueil">
+      <span class="marque-sigle" aria-hidden="true">β̂</span>
+      <span class="marque-texte"><strong>Atelier ECGEB352</strong><small>Travail d'économétrie 2026-2027</small></span>
+    </a>
+    <div class="recherche">
+      <label class="sr" for="champ-recherche">Chercher une question ou un terme</label>
+      <input id="champ-recherche" type="search" placeholder="Chercher : élasticité, 2.11, Sargan…" autocomplete="off">
+      <div class="recherche-resultats" id="recherche-resultats" hidden></div>
+    </div>
+    <nav id="nav-liste"></nav>
+    <div class="nav-pied">
+      <div class="sauvegarde" id="sauvegarde" title="Où sont enregistrés tes notes et tes choix"></div>
+    </div>
+  </aside>
+  <div class="voile" id="voile" hidden></div>
+  <div class="colonne">
+    <header class="barre" id="barre">
+      <button class="bouton-icone" id="bouton-menu" type="button" aria-label="Ouvrir le sommaire" aria-expanded="false">
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="fil" id="fil"></div>
+      <a class="progression" id="progression" href="#choix" title="Questions marquées comme maîtrisées"></a>
+    </header>
+    <main class="vue" id="vue" tabindex="-1"></main>
+  </div>
+</div>
+<div class="bulle" id="bulle" role="tooltip" hidden></div>
+<div class="glose" id="glose" role="dialog" aria-label="Définition" hidden></div>

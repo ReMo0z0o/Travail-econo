@@ -1,0 +1,3 @@
+## Comparatif
+
+{{w:divergences}}
