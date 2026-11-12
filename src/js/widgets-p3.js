@@ -80,7 +80,7 @@
     g.apres.append(h('div', { class: 'commandes', style: 'margin-top:14px' }, cur), placebo);
     function majPlacebo() {
       const P = plan(TEMOINS.c1517.f, (a) => a <= 2007 && a < etat.k, (a) => a <= 2007 && a >= etat.k), r = S.mco(P.X, P.y), t = r.b[3] / r.seHC1[3];
-      placebo.innerHTML = '<p><b>Double différence placebo</b> sur 2003-2007 seulement, avec une période « après » fictive à partir de ' + etat.k + ' : interaction = <b>' + pts(r.b[3]) + '</b> (erreur-type HC1 ' + fmt(100 * r.seHC1[3], 1) + ' point, t = ' + fmt(t, 2) + ', p = ' + fmt(S.pBilaterale(t), 2) + '). ' + (Math.abs(t) < 1.96 ? 'On ne détecte aucun « effet » à une date où il ne s’est rien passé : les deux groupes évoluaient de façon comparable.' : 'Un « effet » apparaît avant tout traitement : signal d’alerte sur les tendances parallèles.') + (etat.k === 2005 ? ' C’est le placebo demandé à la question 3.6 (c).' : '') + '</p>';
+      placebo.innerHTML = '<p><b>Double différence placebo</b> de la part de localités éclairées, sur 2003-2007 seulement, avec une période « après » fictive à partir de ' + etat.k + ' : interaction = <b>' + pts(r.b[3]) + '</b> (erreur-type HC1 ' + fmt(100 * r.seHC1[3], 1) + ' point' + (100 * r.seHC1[3] >= 2 ? 's' : '') + ', t = ' + fmt(t, 2) + ', p = ' + fmt(S.pBilaterale(t), 2) + '). ' + (Math.abs(t) < 1.96 ? 'On ne détecte aucun « effet » à une date où il ne s’est rien passé : les deux groupes évoluaient de façon comparable.' : 'Un « effet » apparaît avant tout traitement : signal d’alerte sur les tendances parallèles.') + (etat.k === 2005 ? ' C’est le placebo demandé à la question 3.6 (c).' : '') + '</p>';
     }
     function dessiner() {
       const v = etat.v, T = serie(1, v), Cm = serie(0, v), tiers = etat.tiers && v === 'nl_extensive';

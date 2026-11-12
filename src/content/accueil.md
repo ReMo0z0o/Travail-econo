@@ -1,6 +1,6 @@
 # Comprendre, refaire et défendre le travail d'économétrie
 
->> Trois enquêtes, 41 questions, 141 sous-questions. Pour chacune : la réponse, le raisonnement expliqué depuis zéro, les chiffres recalculés sur tes fichiers, ce qu'ont fait ChatGPT et Claude, et un espace pour écrire ta propre version.
+>> Trois enquêtes, 41 questions, 121 sous-questions. Pour chacune : la réponse, le raisonnement expliqué depuis zéro, les chiffres recalculés sur tes fichiers, ce qu'ont fait ChatGPT et Claude, et un espace pour écrire ta propre version.
 
 {{w:reprise}}
 
@@ -51,7 +51,10 @@ Beaucoup de questions contiennent en plus un **outil interactif** : un graphique
 - **Les outils interactifs recalculent tout en direct** à partir des données réelles. Leurs résultats sont comparés automatiquement à ceux de R (48 contrôles, tous identiques).
 - **Une erreur de date commune aux deux versions** : la fusion de Bastogne et Bertogne a pris effet le **2 décembre 2024**, et non le 1er (voir la question 1.1).
 - **Un chiffre que je n'ai pas pu vérifier** : la valeur du tableau 4 de l'article sur le Burkina Faso (question 3.4 c). ChatGPT donne 0,396 ; Claude dit ne pas avoir pu lire le tableau. Tu dois la lire toi-même dans ta copie de l'article.
-- **Un piège technique** : les deux scripts échouent dès la lecture des fichiers si la session R n'est pas en UTF-8. Détails dans l'atelier R.
+- **Des constats absents des deux versions**, dans la partie 3 : la série des écoles électrifiées change de régime en 2006, l'effet estimé sur les écoles vient d'une baisse du groupe de comparaison, et il n'est plus significatif avec des erreurs-types groupées (questions 3.5 et 3.8).
+- **Un piège technique** : les deux scripts échouent dès la lecture des fichiers si la session R n'est pas en UTF-8. Détails dans l'[atelier R](#atelier).
+
+Le bilan complet des deux versions est sur la page [ChatGPT vs Claude](#comparatif).
 :::
 
 ## La consigne du cours

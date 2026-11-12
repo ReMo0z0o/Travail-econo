@@ -438,9 +438,9 @@ Seule `nl_extensive` vaut 0 ou 1 : son coefficient, multiplié par 100, donne de
 
 | Écoles électrifiées par localité | Avant (2003-2007) | Après (2010-2012) | Variation |
 |---|--:|--:|--:|
-| Traitées | 0,486 | 0,500 | +0,014 |
-| Comparaison | 0,298 | 0,153 | −0,145 |
-| Double différence | | | **+0,158** |
+| Traitées | 0,4864 | 0,5000 | +0,0136 |
+| Comparaison | 0,2979 | 0,1534 | −0,1445 |
+| Double différence | | | **+0,1581** |
 
 Dans les localités traitées, le nombre d'écoles électrifiées n'a presque pas bougé. La double différence est positive surtout parce qu'il a **baissé** dans le groupe de comparaison. Écrire « le nombre d'écoles électrifiées augmente de 0,16 » est donc un raccourci. La lecture exacte : les traitées ont 0,16 école électrifiée de plus que si elles avaient suivi l'évolution du groupe de comparaison.
 
@@ -533,7 +533,7 @@ C'est un bon exemple d'utilisation d'un résultat « nul » : il ne mesure pas u
 - D'une erreur de calcul
 + De la baisse dans le groupe de comparaison (0,298 puis 0,153)
 - Du changement de satellite
-> (0,500 − 0,486) − (0,153 − 0,298) = 0,014 + 0,145. La double différence compare les traitées à ce qu'elles auraient fait en suivant le groupe de comparaison, qui baisse.
+> (0,5000 − 0,4864) − (0,1534 − 0,2979) = 0,0136 + 0,1445 = 0,158. La double différence compare les traitées à ce qu'elles auraient fait en suivant le groupe de comparaison, qui baisse.
 :oral
 ? Le nombre d'écoles électrifiées a-t-il augmenté dans les localités raccordées ?
 > Presque pas : 0,49 avant, 0,50 après. La double différence de +0,16 vient surtout de la baisse observée dans le groupe de comparaison, de 0,30 à 0,15. C'est un effet par rapport au contrefactuel, pas une hausse observée, et il est fragile : il n'est plus significatif avec des erreurs-types groupées.

@@ -244,6 +244,52 @@
     el.prepend(h('p', null, h('strong', { text: n + ' points où les deux versions diffèrent' }), ' (méthode, profondeur ou conclusion) et ' + accords + ' sous-questions où elles donnent la même réponse.'));
   };
 
+  // -------------------------------------------- atelier R : valeurs de contrôle
+  // [identifiant stable, question, ce qu'on calcule, valeur attendue]. Les cases cochées sont
+  // rangées avec les cartes d'oral (clés « ctl:… »), donc sauvegardées de la même façon.
+  const CONTROLES = [
+    ['lecture', '1.1', 'Lignes et colonnes lues : `dim(immo_raw)` puis `dim(fisc_raw)`', '286 120 × 13 puis 11 039 × 49'],
+    ['communes', '1.1', 'Communes dans le fichier des ventes / dans le fichier fiscal', '565 / 581'],
+    ['orphelines', '1.1', 'Communes sans correspondance : ventes seulement / fiscal seulement', '13 / 29'],
+    ['base', '1.1', 'Base d’analyse', '551 communes (281 en Flandre, 251 en Wallonie, 19 à Bruxelles)'],
+    ['mediane', '1.3', 'Erreur-type de la médiane : Rouvroy / Charleroi', '38 796 € / 1 944 €'],
+    ['asymetrie', '1.4', 'Asymétrie du prix / de `ln(prix)`', '1,338 / −0,007'],
+    ['loglog', '1.6', 'Élasticité du modèle log-log (erreur-type HC1)', '1,4443 (0,1494)'],
+    ['regions', '1.9', 'Élasticité ; indicatrice Wallonie ; indicatrice Bruxelles', '1,6078 ; −0,2049 ; 0,8949'],
+    ['pentes', '1.13', 'Élasticités Flandre / Wallonie / Bruxelles', '1,440 / 1,838 / 1,072'],
+    ['bp', '1.14', 'Breusch-Pagan sur les régresseurs : modèle 1.6 / modèle 1.9', '82,6 / 9,26'],
+    ['partapp', '1.15', 'Coefficient de `part_app` (HC1)', '0,379 (0,076)'],
+    ['meres', '2.1', 'Nombre de mères', '254 654'],
+    ['mco', '2.2', 'MCO : coefficient de `morekids`', '−5,387 (0,087)'],
+    ['etape1', '2.4', 'Première étape : coefficient de `samegender` ; statistique F', '0,0675 ; 1 238'],
+    ['vi', '2.6', 'VI avec `samegender`', '−6,314 (1,275)'],
+    ['tsls', '2.8', '2SLS avec `twoboys` et `twogirls` ; F de première étape', '−5,463 (1,229) ; 657,9'],
+    ['sargan', '2.11', 'Test de suridentification', '3,856 (p = 0,0496)'],
+    ['hausman', '2.12', 'Hausman : coefficient du résidu de première étape', '−0,771 (1,232)'],
+    ['extensive', '2.13', '2SLS sur la probabilité de travailler', '−0,119 (0,028)'],
+    ['panel', '3.1', 'Localités ; lignes de 2003 à 2014', '574 ; 6 888'],
+    ['groupes', '3.2', 'Localités traitées / de comparaison', '59 / 238'],
+    ['did', '3.4', 'Double différence (HC1) ; observations', '0,3802 (0,0328) ; 2 866'],
+    ['placebo', '3.6', 'Double différence placebo (HC1)', '0,0129 (0,0277)'],
+    ['twfe', '3.7', 'Effets fixes de localité et d’année (HC1)', '0,3800 (0,0265)'],
+    ['groupees', '3.8', 'Erreurs-types groupées : question 3.4 / question 3.7', '0,0442 / 0,0467']
+  ];
+  A.widgets.controles = function (el) {
+    el.className = ''; el.removeAttribute('data-w');
+    const compteur = h('p', { class: 'note-pied', 'aria-live': 'polite' });
+    const maj = () => { const n = CONTROLES.filter((c) => A.store.oral('ctl:' + c[0])).length; compteur.textContent = n + ' valeur' + (n > 1 ? 's' : '') + ' retrouvée' + (n > 1 ? 's' : '') + ' sur ' + CONTROLES.length + '. Tes coches sont enregistrées.'; };
+    const corps = h('tbody');
+    CONTROLES.forEach(([id, q, quoi, valeur]) => {
+      const c = h('input', { type: 'checkbox', 'aria-label': 'Valeur retrouvée : ' + A.brut(quoi) });
+      c.checked = !!A.store.oral('ctl:' + id);
+      c.addEventListener('change', () => { A.store.oral('ctl:' + id, c.checked ? 'ok' : ''); maj(); });
+      corps.append(h('tr', null, h('td', null, h('a', { href: routeQ(q), text: q })), h('td', { html: A.inline(quoi) }), h('td', { class: 'd', text: valeur }), h('td', { class: 'c' }, c)));
+    });
+    const t = h('table', null, h('thead', null, h('tr', null, h('th', { text: 'Question' }), h('th', { text: 'Ce que tu calcules' }), h('th', { class: 'd', text: 'Valeur attendue' }), h('th', { class: 'c', text: 'Retrouvée' }))), corps);
+    el.append(h('div', { class: 'table-boite' }, t), compteur);
+    maj();
+  };
+
   // ------------------------------------------------------- mon rapport / export
   function exportMarkdown() {
     let out = '# Mon rapport — notes et choix (ECGEB352)\n';
