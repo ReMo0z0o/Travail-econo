@@ -91,7 +91,7 @@
 
   function tableau(lignes) {
     // "\|" = barre verticale littérale dans une cellule (ex. la barre de ivreg).
-    const cellules = (l) => l.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'));
+    const cellules = (l) => l.trim().replace(/^\||\|$/g, '').replace(/\\\|/g, '\u0001').split('|').map((c) => c.trim().replace(/\u0001/g, '|'));
     const tete = cellules(lignes[0]);
     let align = tete.map(() => ''), debut = 1;
     if (lignes[1] && /^\|?[\s:|-]+\|?$/.test(lignes[1]) && lignes[1].includes('-')) {
