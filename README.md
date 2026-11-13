@@ -56,6 +56,15 @@ node tests/compte.cjs
 vérifie la sauvegarde des notes dans l'espace privé du lecteur quand la page est ouverte comme
 artifact claude.ai, à l'aide d'un faux `window.claude` (écriture, relecture, panne passagère, refus).
 
+## Document PDF et script R
+
+Le dossier `rendu/` contient la résolution commentée (`Resolution_ECGEB352.pdf`) et le script R complet
+(`travail_ecgeb352.R`). Le PDF est fabriqué à partir du même contenu que l'application :
+
+```bash
+node outils/pdf.cjs <dossier resultats produit par le script R> rendu/Resolution_ECGEB352.pdf
+```
+
 ## Données
 
 Statbel (ventes immobilières et statistique fiscale des revenus, 2023), recensement américain de 1980
