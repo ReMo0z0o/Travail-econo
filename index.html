@@ -431,22 +431,29 @@ td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
 .nav-sous a.ici { color: var(--accent-ink); background: var(--accent-soft); font-weight: 600; }
 .nav-sous a.ici .l { color: var(--accent); }
 
-.etapes { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 9; display: flex; gap: 6px; align-items: center;
-  margin: 0 0 8px; padding: 8px 0; overflow-x: auto; scrollbar-width: thin; background: var(--bg); border-bottom: 1px solid var(--line); }
-.etapes-n { flex: none; font: 600 12px/1 var(--f-code); color: var(--muted); padding-right: 4px; }
-.etapes a { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 5px 10px; border: 1px solid var(--line-2);
+.etapes { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 9; display: flex; align-items: center; gap: 4px;
+  margin: 0 0 8px; padding: 8px 0; background: var(--bg); border-bottom: 1px solid var(--line); }
+.etapes-piste { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; overflow-x: auto; scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; scrollbar-width: none; overscroll-behavior-x: contain; padding: 2px 0; }
+.etapes-piste::-webkit-scrollbar { display: none; }
+.etapes-n { flex: none; scroll-snap-align: start; font: 600 12px/1 var(--f-code); color: var(--muted); padding-right: 4px; }
+.etapes-piste a { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 6px 11px; border: 1px solid var(--line-2);
   border-radius: 999px; background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: 13px; line-height: 1.2; }
-.etapes a b { font: 600 12px/1 var(--f-code); color: var(--muted); }
-.etapes a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.etapes a:hover { border-color: var(--accent); color: var(--ink); }
-.etapes a.ici { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.etapes a.ici b { color: var(--on-accent); }
-.etapes .etapes-fin { margin-left: auto; }
+.etapes-piste a b { font: 600 12px/1 var(--f-code); color: var(--muted); }
+.etapes-piste a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etapes-piste a:hover { border-color: var(--accent); color: var(--ink); }
+.etapes-piste a.ici { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.etapes-piste a.ici b { color: var(--on-accent); }
+.etapes-fleche { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
+  font: 600 18px/1 var(--f-texte); cursor: pointer; display: grid; place-items: center; box-shadow: 0 1px 4px rgba(8,12,20,.12); }
+.etapes-fleche:hover { border-color: var(--accent); color: var(--accent-ink); }
+/* Indice visuel : un fondu à droite tant qu'il reste des sous-questions à voir. */
+.etapes.deborde .etapes-piste { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
 .ancre-fin { scroll-margin-top: 112px; height: 1px; }
 .voisins-barre { flex: none; display: flex; gap: 6px; }
 .voisins-barre .btn { white-space: nowrap; }
 @media (max-width: 640px) {
-  .etapes a { max-width: none; } .etapes a span { display: none; } .etapes .etapes-fin span { display: inline; }
+  .etapes-piste a { max-width: 170px; padding: 6px 10px; }
   .voisins-barre .btn { padding-inline: 9px; }
   .barre .progression span:not(.jauge) { display: none; }
 }
@@ -2271,6 +2278,20 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     const sv = $('sauvegarde'), mode = A.store.mode();
     sv.innerHTML = mode === 'compte' ? 'Notes et choix <b>enregistrés dans ton compte Claude</b> (privés) et dans ce navigateur.' : mode === 'local' ? 'Notes et choix <b>enregistrés dans ce navigateur</b>. Exporte-les depuis « Mon rapport » pour les garder.' : 'Stockage indisponible ici : <b>exporte tes notes</b> avant de fermer la page.';
   }
+  // Barre des sous-questions : on la fait glisser au doigt, à la molette ou avec les flèches.
+  function barreEtapes(piste, qid) {
+    const fleche = (sens, texte) => h('button', { type: 'button', class: 'etapes-fleche ' + sens, 'aria-label': texte, hidden: true, onclick: () => piste.scrollBy({ left: (sens === 'g' ? -1 : 1) * piste.clientWidth * 0.7, behavior: 'smooth' }) }, sens === 'g' ? '‹' : '›');
+    const g = fleche('g', 'Sous-questions précédentes'), d = fleche('d', 'Sous-questions suivantes');
+    const barre = h('nav', { class: 'etapes', 'aria-label': 'Sous-questions de la question ' + qid }, g, piste, d);
+    const maj = () => { const max = piste.scrollWidth - piste.clientWidth; g.hidden = piste.scrollLeft < 4; d.hidden = piste.scrollLeft > max - 4; barre.classList.toggle('deborde', !d.hidden); };
+    piste.addEventListener('scroll', maj, { passive: true });
+    // La molette verticale fait défiler la barre horizontalement quand elle déborde.
+    piste.addEventListener('wheel', (ev) => { if (piste.scrollWidth <= piste.clientWidth || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return; ev.preventDefault(); piste.scrollLeft += ev.deltaY; }, { passive: false });
+    if (window.ResizeObserver) new ResizeObserver(maj).observe(piste);
+    requestAnimationFrame(maj);
+    return barre;
+  }
+
   // Boutons « question précédente / suivante » dans la barre du haut (pages de question seulement).
   function filVoisins(hAvant, tAvant, hApres, tApres) {
     const b = $('voisins-barre'); b.textContent = ''; b.hidden = false;
@@ -2414,13 +2435,13 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     if (q.concepts.length) { const puces = h('div', { class: 'puces' }, h('span', { class: 'puce', text: 'À revoir avant :' })); q.concepts.forEach((c) => { const l = M.lecons.find((x) => x.id === c); if (l) puces.append(h('a', { class: 'puce', href: '#' + l.route, text: l.titre })); }); tete.append(puces); }
     v.append(tete);
     const avecLettres = q.sous.filter((s) => s.id);
-    const etapes = h('nav', { class: 'etapes', 'aria-label': 'Sous-questions de la question ' + q.id });
+    const piste = h('div', { class: 'etapes-piste' });
     if (avecLettres.length > 1) {
-      etapes.append(h('span', { class: 'etapes-n', text: q.id }));
-      avecLettres.forEach((s) => etapes.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id, title: s.titre }, h('b', { text: s.id }), h('span', { text: s.titre }))));
+      piste.append(h('span', { class: 'etapes-n', text: q.id }));
+      avecLettres.forEach((s) => piste.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id, title: s.titre }, h('b', { text: s.id }), h('span', { text: s.titre }))));
     }
-    if (q.retenir || q.quiz.length || q.oral.length) etapes.append(h('a', { href: '#' + q.route + '-fin', 'data-sous': 'fin', class: 'etapes-fin' }, h('span', { text: 'Bilan et oral' })));
-    if (etapes.children.length > 1) v.append(etapes);
+    if (q.retenir || q.quiz.length || q.oral.length) piste.append(h('a', { href: '#' + q.route + '-fin', 'data-sous': 'fin', class: 'etapes-fin' }, h('span', { text: 'Bilan et oral' })));
+    if (piste.children.length > 1) v.append(barreEtapes(piste, q.id));
     q.sous.forEach((s) => {
       const sect = h('section', { class: 'sous', id: 's-' + (s.id || 'r') });
       if (s.id || s.titre) sect.append(h('div', { class: 'sous-tete' }, s.id ? h('span', { class: 'sous-lettre', text: lettre(s) }) : null, h('h2', { class: 'sous-titre', text: s.titre || 'Réponse' })));
@@ -2619,7 +2640,11 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) courant = sects[sects.length - 1].id.slice(2);
     document.querySelectorAll('.etapes a, .nav-sous.ouverte a').forEach((a) => a.classList.toggle('ici', a.dataset.sous === courant));
     const ici = document.querySelector('.etapes a.ici');
-    if (ici) { const bar = ici.parentElement, g = ici.offsetLeft - bar.scrollLeft; if (g < 40 || g + ici.offsetWidth > bar.clientWidth - 40) bar.scrollTo({ left: ici.offsetLeft - 40, behavior: 'smooth' }); }
+    if (ici) {
+      // Garde la pastille courante visible dans la barre, sans bouger la barre si elle l'est déjà.
+      const bar = ici.parentElement, rb = bar.getBoundingClientRect(), ri = ici.getBoundingClientRect();
+      if (ri.left < rb.left + 8 || ri.right > rb.right - 8) bar.scrollTo({ left: bar.scrollLeft + ri.left - rb.left - 40, behavior: 'smooth' });
+    }
   }
   window.addEventListener('scroll', () => { if (!reperePlanifie) { reperePlanifie = true; requestAnimationFrame(reperer); } }, { passive: true });
 

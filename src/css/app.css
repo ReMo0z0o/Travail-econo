@@ -421,22 +421,29 @@ td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
 .nav-sous a.ici { color: var(--accent-ink); background: var(--accent-soft); font-weight: 600; }
 .nav-sous a.ici .l { color: var(--accent); }
 
-.etapes { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 9; display: flex; gap: 6px; align-items: center;
-  margin: 0 0 8px; padding: 8px 0; overflow-x: auto; scrollbar-width: thin; background: var(--bg); border-bottom: 1px solid var(--line); }
-.etapes-n { flex: none; font: 600 12px/1 var(--f-code); color: var(--muted); padding-right: 4px; }
-.etapes a { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 5px 10px; border: 1px solid var(--line-2);
+.etapes { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 9; display: flex; align-items: center; gap: 4px;
+  margin: 0 0 8px; padding: 8px 0; background: var(--bg); border-bottom: 1px solid var(--line); }
+.etapes-piste { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; overflow-x: auto; scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; scrollbar-width: none; overscroll-behavior-x: contain; padding: 2px 0; }
+.etapes-piste::-webkit-scrollbar { display: none; }
+.etapes-n { flex: none; scroll-snap-align: start; font: 600 12px/1 var(--f-code); color: var(--muted); padding-right: 4px; }
+.etapes-piste a { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 6px 11px; border: 1px solid var(--line-2);
   border-radius: 999px; background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: 13px; line-height: 1.2; }
-.etapes a b { font: 600 12px/1 var(--f-code); color: var(--muted); }
-.etapes a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.etapes a:hover { border-color: var(--accent); color: var(--ink); }
-.etapes a.ici { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.etapes a.ici b { color: var(--on-accent); }
-.etapes .etapes-fin { margin-left: auto; }
+.etapes-piste a b { font: 600 12px/1 var(--f-code); color: var(--muted); }
+.etapes-piste a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etapes-piste a:hover { border-color: var(--accent); color: var(--ink); }
+.etapes-piste a.ici { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.etapes-piste a.ici b { color: var(--on-accent); }
+.etapes-fleche { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
+  font: 600 18px/1 var(--f-texte); cursor: pointer; display: grid; place-items: center; box-shadow: 0 1px 4px rgba(8,12,20,.12); }
+.etapes-fleche:hover { border-color: var(--accent); color: var(--accent-ink); }
+/* Indice visuel : un fondu à droite tant qu'il reste des sous-questions à voir. */
+.etapes.deborde .etapes-piste { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
 .ancre-fin { scroll-margin-top: 112px; height: 1px; }
 .voisins-barre { flex: none; display: flex; gap: 6px; }
 .voisins-barre .btn { white-space: nowrap; }
 @media (max-width: 640px) {
-  .etapes a { max-width: none; } .etapes a span { display: none; } .etapes .etapes-fin span { display: inline; }
+  .etapes-piste a { max-width: 170px; padding: 6px 10px; }
   .voisins-barre .btn { padding-inline: 9px; }
   .barre .progression span:not(.jauge) { display: none; }
 }

@@ -77,6 +77,20 @@
     const sv = $('sauvegarde'), mode = A.store.mode();
     sv.innerHTML = mode === 'compte' ? 'Notes et choix <b>enregistrés dans ton compte Claude</b> (privés) et dans ce navigateur.' : mode === 'local' ? 'Notes et choix <b>enregistrés dans ce navigateur</b>. Exporte-les depuis « Mon rapport » pour les garder.' : 'Stockage indisponible ici : <b>exporte tes notes</b> avant de fermer la page.';
   }
+  // Barre des sous-questions : on la fait glisser au doigt, à la molette ou avec les flèches.
+  function barreEtapes(piste, qid) {
+    const fleche = (sens, texte) => h('button', { type: 'button', class: 'etapes-fleche ' + sens, 'aria-label': texte, hidden: true, onclick: () => piste.scrollBy({ left: (sens === 'g' ? -1 : 1) * piste.clientWidth * 0.7, behavior: 'smooth' }) }, sens === 'g' ? '‹' : '›');
+    const g = fleche('g', 'Sous-questions précédentes'), d = fleche('d', 'Sous-questions suivantes');
+    const barre = h('nav', { class: 'etapes', 'aria-label': 'Sous-questions de la question ' + qid }, g, piste, d);
+    const maj = () => { const max = piste.scrollWidth - piste.clientWidth; g.hidden = piste.scrollLeft < 4; d.hidden = piste.scrollLeft > max - 4; barre.classList.toggle('deborde', !d.hidden); };
+    piste.addEventListener('scroll', maj, { passive: true });
+    // La molette verticale fait défiler la barre horizontalement quand elle déborde.
+    piste.addEventListener('wheel', (ev) => { if (piste.scrollWidth <= piste.clientWidth || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return; ev.preventDefault(); piste.scrollLeft += ev.deltaY; }, { passive: false });
+    if (window.ResizeObserver) new ResizeObserver(maj).observe(piste);
+    requestAnimationFrame(maj);
+    return barre;
+  }
+
   // Boutons « question précédente / suivante » dans la barre du haut (pages de question seulement).
   function filVoisins(hAvant, tAvant, hApres, tApres) {
     const b = $('voisins-barre'); b.textContent = ''; b.hidden = false;
@@ -220,13 +234,13 @@
     if (q.concepts.length) { const puces = h('div', { class: 'puces' }, h('span', { class: 'puce', text: 'À revoir avant :' })); q.concepts.forEach((c) => { const l = M.lecons.find((x) => x.id === c); if (l) puces.append(h('a', { class: 'puce', href: '#' + l.route, text: l.titre })); }); tete.append(puces); }
     v.append(tete);
     const avecLettres = q.sous.filter((s) => s.id);
-    const etapes = h('nav', { class: 'etapes', 'aria-label': 'Sous-questions de la question ' + q.id });
+    const piste = h('div', { class: 'etapes-piste' });
     if (avecLettres.length > 1) {
-      etapes.append(h('span', { class: 'etapes-n', text: q.id }));
-      avecLettres.forEach((s) => etapes.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id, title: s.titre }, h('b', { text: s.id }), h('span', { text: s.titre }))));
+      piste.append(h('span', { class: 'etapes-n', text: q.id }));
+      avecLettres.forEach((s) => piste.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id, title: s.titre }, h('b', { text: s.id }), h('span', { text: s.titre }))));
     }
-    if (q.retenir || q.quiz.length || q.oral.length) etapes.append(h('a', { href: '#' + q.route + '-fin', 'data-sous': 'fin', class: 'etapes-fin' }, h('span', { text: 'Bilan et oral' })));
-    if (etapes.children.length > 1) v.append(etapes);
+    if (q.retenir || q.quiz.length || q.oral.length) piste.append(h('a', { href: '#' + q.route + '-fin', 'data-sous': 'fin', class: 'etapes-fin' }, h('span', { text: 'Bilan et oral' })));
+    if (piste.children.length > 1) v.append(barreEtapes(piste, q.id));
     q.sous.forEach((s) => {
       const sect = h('section', { class: 'sous', id: 's-' + (s.id || 'r') });
       if (s.id || s.titre) sect.append(h('div', { class: 'sous-tete' }, s.id ? h('span', { class: 'sous-lettre', text: lettre(s) }) : null, h('h2', { class: 'sous-titre', text: s.titre || 'Réponse' })));
@@ -425,7 +439,11 @@
     if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) courant = sects[sects.length - 1].id.slice(2);
     document.querySelectorAll('.etapes a, .nav-sous.ouverte a').forEach((a) => a.classList.toggle('ici', a.dataset.sous === courant));
     const ici = document.querySelector('.etapes a.ici');
-    if (ici) { const bar = ici.parentElement, g = ici.offsetLeft - bar.scrollLeft; if (g < 40 || g + ici.offsetWidth > bar.clientWidth - 40) bar.scrollTo({ left: ici.offsetLeft - 40, behavior: 'smooth' }); }
+    if (ici) {
+      // Garde la pastille courante visible dans la barre, sans bouger la barre si elle l'est déjà.
+      const bar = ici.parentElement, rb = bar.getBoundingClientRect(), ri = ici.getBoundingClientRect();
+      if (ri.left < rb.left + 8 || ri.right > rb.right - 8) bar.scrollTo({ left: bar.scrollLeft + ri.left - rb.left - 40, behavior: 'smooth' });
+    }
   }
   window.addEventListener('scroll', () => { if (!reperePlanifie) { reperePlanifie = true; requestAnimationFrame(reperer); } }, { passive: true });
 
