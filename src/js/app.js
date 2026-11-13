@@ -23,6 +23,19 @@
   const rubrique = (t) => h('div', { class: 'rubrique', text: t });
 
   // ------------------------------------------------------------------- sommaire
+  // Lien d'une question dans le sommaire, suivi de la liste de ses sous-questions (affichée
+  // seulement pour la question ouverte).
+  function lienQ(id) {
+    const q = M.questions[id], e = A.store.etat.q[id], frag = document.createDocumentFragment();
+    frag.append(h('a', { class: 'nav-q' + (e && e.fait ? ' fait' : ''), href: routeQ(id), 'data-route': q.route }, h('span', { class: 'n', text: id }), h('span', { class: 't', text: q.titre })));
+    const sous = q.sous.filter((s) => s.id);
+    if (sous.length) {
+      const l = h('div', { class: 'nav-sous', 'data-q': q.route });
+      sous.forEach((s) => l.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id }, h('span', { class: 'l', text: s.id }), h('span', { text: s.titre }))));
+      frag.append(l);
+    }
+    return frag;
+  }
   function dessinerNav() {
     const nav = $('nav-liste'); nav.textContent = '';
     const lien = (route, pico, texte) => h('a', { class: 'nav-lien', href: '#' + route, 'data-route': route }, h('span', { class: 'pico', text: pico }), texte);
@@ -31,16 +44,16 @@
     M.parties.forEach((p) => {
       const b = A.store.bilanPartie(p.num);
       const d = h('details', { class: 'nav-partie', 'data-partie': p.id });
+      // Une seule partie dépliée à la fois : le sommaire reste court.
+      d.addEventListener('toggle', () => { if (d.open) document.querySelectorAll('.nav-partie').forEach((x) => { if (x !== d) x.open = false; }); });
       d.append(h('summary', null, h('span', { class: 'chevron' }), h('span', { class: 'num', text: String(p.num) }), h('span', { text: p.titre.split(' : ')[0] }), h('span', { class: 'compte', text: b.fait + '/' + b.total })));
       const liste = h('div', { class: 'nav-questions' });
       liste.append(h('a', { class: 'nav-q', href: '#' + p.id, 'data-route': p.id }, h('span', { class: 'n', text: '·' }), 'Présentation de la partie'));
       p.sections.forEach((sec) => {
         liste.append(h('div', { class: 'nav-sec', text: sec.id + '. ' + sec.titre }));
-        sec.questions.forEach((id) => { const q = M.questions[id], e = A.store.etat.q[id];
-          liste.append(h('a', { class: 'nav-q' + (e && e.fait ? ' fait' : ''), href: routeQ(id), 'data-route': q.route }, h('span', { class: 'n', text: id }), q.titre)); });
+        sec.questions.forEach((id) => liste.append(lienQ(id)));
       });
-      if (!p.sections.length) p.questions.forEach((id) => { const q = M.questions[id], e = A.store.etat.q[id];
-        liste.append(h('a', { class: 'nav-q' + (e && e.fait ? ' fait' : ''), href: routeQ(id), 'data-route': q.route }, h('span', { class: 'n', text: id }), q.titre)); });
+      if (!p.sections.length) p.questions.forEach((id) => liste.append(lienQ(id)));
       d.append(liste); nav.append(d);
     });
     nav.append(h('div', { class: 'nav-titre', text: 'Pour finir le travail' }));
@@ -53,6 +66,7 @@
     document.querySelectorAll('#nav-liste [data-route]').forEach((a) => a.classList.toggle('actif', a.dataset.route === base || (a.dataset.route === 'bases' && /^b-/.test(base))));
     const q = /^q-(\d+)-/.exec(base), partie = q ? 'p' + q[1] : /^p\d$/.test(base) ? base : null;
     document.querySelectorAll('.nav-partie').forEach((d) => { if (d.dataset.partie === partie) d.open = true; });
+    document.querySelectorAll('#nav-liste .nav-sous').forEach((l) => l.classList.toggle('ouverte', l.dataset.q === base));
     const actif = document.querySelector('#nav-liste .actif');
     if (actif && actif.scrollIntoView && window.innerWidth > 960) actif.scrollIntoView({ block: 'nearest' });
   }
@@ -63,7 +77,14 @@
     const sv = $('sauvegarde'), mode = A.store.mode();
     sv.innerHTML = mode === 'compte' ? 'Notes et choix <b>enregistrés dans ton compte Claude</b> (privés) et dans ce navigateur.' : mode === 'local' ? 'Notes et choix <b>enregistrés dans ce navigateur</b>. Exporte-les depuis « Mon rapport » pour les garder.' : 'Stockage indisponible ici : <b>exporte tes notes</b> avant de fermer la page.';
   }
+  // Boutons « question précédente / suivante » dans la barre du haut (pages de question seulement).
+  function filVoisins(hAvant, tAvant, hApres, tApres) {
+    const b = $('voisins-barre'); b.textContent = ''; b.hidden = false;
+    b.append(h('a', { class: 'btn petit', href: hAvant, title: 'Précédent : ' + tAvant, 'aria-label': 'Précédent : ' + tAvant }, '← ' + tAvant),
+      h('a', { class: 'btn petit plein', href: hApres, title: 'Suivant : ' + tApres, 'aria-label': 'Suivant : ' + tApres }, tApres + ' →'));
+  }
   function fil(parts) {
+    const vb = $('voisins-barre'); if (vb) { vb.hidden = true; vb.textContent = ''; }
     const f = $('fil'); f.textContent = '';
     parts.forEach((p, i) => { if (i) f.append(h('span', { class: 'sep', text: '›' })); f.append(p[1] ? h('a', { href: p[1], text: p[0] }) : h('span', { text: p[0] })); });
   }
@@ -190,12 +211,22 @@
     if (!q) return vueIntrouvable();
     const p = M.parties.find((x) => x.num === q.partie), sec = p.sections.find((x) => x.id === q.section);
     fil([['Accueil', '#accueil'], ['Partie ' + p.num, '#' + p.id], ['Question ' + q.id]]);
+    const vs = A.voisins(q.id);
+    filVoisins(vs.avant ? routeQ(vs.avant) : '#' + p.id, vs.avant ? vs.avant : 'Partie ' + p.num, vs.apres ? routeQ(vs.apres) : '#comparatif', vs.apres ? vs.apres : 'Fin');
     const v = h('div');
     const tete = h('div', { class: 'q-tete' }, h('div', { class: 'q-num' }, h('b', { text: q.id }), 'Partie ' + p.num + (sec ? ' · ' + sec.id + '. ' + sec.titre : '')), h('h1', { text: q.titre }));
     if (q.enonce) tete.append(bloc('enonce', 'Énoncé', q.enonce));
     if (q.intro) tete.append(h('div', { html: md(q.intro) }));
     if (q.concepts.length) { const puces = h('div', { class: 'puces' }, h('span', { class: 'puce', text: 'À revoir avant :' })); q.concepts.forEach((c) => { const l = M.lecons.find((x) => x.id === c); if (l) puces.append(h('a', { class: 'puce', href: '#' + l.route, text: l.titre })); }); tete.append(puces); }
     v.append(tete);
+    const avecLettres = q.sous.filter((s) => s.id);
+    const etapes = h('nav', { class: 'etapes', 'aria-label': 'Sous-questions de la question ' + q.id });
+    if (avecLettres.length > 1) {
+      etapes.append(h('span', { class: 'etapes-n', text: q.id }));
+      avecLettres.forEach((s) => etapes.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id, title: s.titre }, h('b', { text: s.id }), h('span', { text: s.titre }))));
+    }
+    if (q.retenir || q.quiz.length || q.oral.length) etapes.append(h('a', { href: '#' + q.route + '-fin', 'data-sous': 'fin', class: 'etapes-fin' }, h('span', { text: 'Bilan et oral' })));
+    if (etapes.children.length > 1) v.append(etapes);
     q.sous.forEach((s) => {
       const sect = h('section', { class: 'sous', id: 's-' + (s.id || 'r') });
       if (s.id || s.titre) sect.append(h('div', { class: 'sous-tete' }, s.id ? h('span', { class: 'sous-lettre', text: lettre(s) }) : null, h('h2', { class: 'sous-titre', text: s.titre || 'Réponse' })));
@@ -211,6 +242,7 @@
       sect.append(blocVersion(q, s));
       v.append(sect);
     });
+    v.append(h('div', { class: 'ancre-fin', id: 's-fin' }));
     if (q.retenir) v.append(h('h2', { text: 'À retenir' }), h('div', { html: md(':::cle L’essentiel de la question ' + q.id + '\n' + q.retenir + '\n:::') }));
     if (q.quiz.length) v.append(h('h2', { text: 'Vérifie que tu as compris' }), blocQuiz(q));
     if (q.oral.length) { v.append(h('h2', { text: 'Questions possibles à l’oral' }), h('p', { class: 'widget-aide', text: 'Réponds à voix haute avant de déplier la réponse.' })); q.oral.forEach((o, i) => v.append(carteOral(q.id + '#' + i, o))); }
@@ -383,6 +415,20 @@
 
   // -------------------------------------------------------------------- routeur
   const PAGES = { accueil: vueAccueil, bases: vueBases, comparatif: vuePage('comparatif', 'ChatGPT vs Claude'), choix: vueChoix, atelier: vuePage('atelier', 'Atelier R'), oral: vueOral, glossaire: vueGlossaire };
+  let reperePlanifie = false;
+  function reperer() {
+    reperePlanifie = false;
+    const sects = document.querySelectorAll('#vue section.sous[id^="s-"], #vue .ancre-fin');
+    if (!sects.length) return;
+    const haut = 140; let courant = null;
+    sects.forEach((s) => { if (s.getBoundingClientRect().top <= haut) courant = s.id.slice(2); });
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) courant = sects[sects.length - 1].id.slice(2);
+    document.querySelectorAll('.etapes a, .nav-sous.ouverte a').forEach((a) => a.classList.toggle('ici', a.dataset.sous === courant));
+    const ici = document.querySelector('.etapes a.ici');
+    if (ici) { const bar = ici.parentElement, g = ici.offsetLeft - bar.scrollLeft; if (g < 40 || g + ici.offsetWidth > bar.clientWidth - 40) bar.scrollTo({ left: ici.offsetLeft - 40, behavior: 'smooth' }); }
+  }
+  window.addEventListener('scroll', () => { if (!reperePlanifie) { reperePlanifie = true; requestAnimationFrame(reperer); } }, { passive: true });
+
   function router() {
     const route = decodeURIComponent(location.hash.replace(/^#/, '')) || 'accueil';
     const memeQuestion = /^q-/.test(route) && route.replace(/^(q-\d+-\d+).*$/, '$1') === routeActive.replace(/^(q-\d+-\d+).*$/, '$1') && $('vue').firstChild;
@@ -396,6 +442,7 @@
     marquerActif();
     const ancre = /^q-\d+-\d+-(\w+)$/.exec(route), cible = ancre && document.getElementById('s-' + ancre[1]);
     if (cible) cible.scrollIntoView(); else window.scrollTo(0, 0);
+    requestAnimationFrame(reperer);
   }
 
   // ------------------------------------------------------- glossaire en bulle
@@ -439,7 +486,7 @@
 
   // ------------------------------------------------------------- menu mobile
   function fermerNav() { $('nav').classList.remove('ouvert'); $('voile').hidden = true; $('bouton-menu').setAttribute('aria-expanded', 'false'); }
-  function ouvrirNav() { $('nav').classList.add('ouvert'); $('voile').hidden = false; $('bouton-menu').setAttribute('aria-expanded', 'true'); }
+  function ouvrirNav() { $('nav').classList.add('ouvert'); $('voile').hidden = false; $('bouton-menu').setAttribute('aria-expanded', 'true'); const ac = document.querySelector('#nav-liste .nav-sous.ouverte a.ici') || document.querySelector('#nav-liste .actif'); if (ac) ac.scrollIntoView({ block: 'center' }); }
 
   function demarrer() {
     A.store.demarrer();

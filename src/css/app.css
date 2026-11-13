@@ -235,7 +235,7 @@ a.carte:hover { border-color: var(--accent); color: var(--ink); }
 .enonce { padding: 14px 16px 2px; margin: 0 0 18px; background: var(--surface); border: 1px dashed var(--line-2); border-radius: var(--r); }
 .enonce > .etiquette { font: 600 11.5px/1 var(--f-texte); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .enonce p, .enonce li { font-size: 15.5px; color: var(--ink-2); }
-.sous { margin: 34px 0 0; padding-top: 26px; border-top: 2px solid var(--ink); scroll-margin-top: 70px; }
+.sous { margin: 34px 0 0; padding-top: 26px; border-top: 2px solid var(--ink); scroll-margin-top: 112px; }
 .sous-tete { display: flex; gap: 12px; align-items: baseline; margin-bottom: 10px; }
 .sous-lettre { flex: none; font: 700 20px/1 var(--f-titre); }
 .sous-titre { font: 600 19px/1.3 var(--f-titre); margin: 0; text-wrap: balance; }
@@ -410,3 +410,34 @@ td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
 
 /* Dans une étiquette en capitales, le code garde sa casse : R distingue summary() de SUMMARY(). */
 .etiquette code { text-transform: none; letter-spacing: 0; }
+
+/* ---- Navigation : sous-questions dans le sommaire, barre d'étapes, précédent / suivant ---- */
+.nav-q .t { min-width: 0; }
+.nav-sous { display: none; flex-direction: column; margin: 0 0 6px 42px; padding-left: 8px; border-left: 1px dashed var(--line-2); }
+.nav-sous.ouverte { display: flex; }
+.nav-sous a { display: flex; gap: 7px; align-items: baseline; padding: 3px 6px; border-radius: var(--r-s); font-size: 12.5px; line-height: 1.35; color: var(--muted); text-decoration: none; }
+.nav-sous a:hover { color: var(--ink); background: var(--surface-2); }
+.nav-sous a .l { flex: none; font: 600 11.5px/1.35 var(--f-code); color: var(--muted); min-width: 12px; }
+.nav-sous a.ici { color: var(--accent-ink); background: var(--accent-soft); font-weight: 600; }
+.nav-sous a.ici .l { color: var(--accent); }
+
+.etapes { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 9; display: flex; gap: 6px; align-items: center;
+  margin: 0 0 8px; padding: 8px 0; overflow-x: auto; scrollbar-width: thin; background: var(--bg); border-bottom: 1px solid var(--line); }
+.etapes-n { flex: none; font: 600 12px/1 var(--f-code); color: var(--muted); padding-right: 4px; }
+.etapes a { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 5px 10px; border: 1px solid var(--line-2);
+  border-radius: 999px; background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: 13px; line-height: 1.2; }
+.etapes a b { font: 600 12px/1 var(--f-code); color: var(--muted); }
+.etapes a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etapes a:hover { border-color: var(--accent); color: var(--ink); }
+.etapes a.ici { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.etapes a.ici b { color: var(--on-accent); }
+.etapes .etapes-fin { margin-left: auto; }
+.ancre-fin { scroll-margin-top: 112px; height: 1px; }
+.voisins-barre { flex: none; display: flex; gap: 6px; }
+.voisins-barre .btn { white-space: nowrap; }
+@media (max-width: 640px) {
+  .etapes a { max-width: none; } .etapes a span { display: none; } .etapes .etapes-fin span { display: inline; }
+  .voisins-barre .btn { padding-inline: 9px; }
+  .barre .progression span:not(.jauge) { display: none; }
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

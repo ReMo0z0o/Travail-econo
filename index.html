@@ -245,7 +245,7 @@ a.carte:hover { border-color: var(--accent); color: var(--ink); }
 .enonce { padding: 14px 16px 2px; margin: 0 0 18px; background: var(--surface); border: 1px dashed var(--line-2); border-radius: var(--r); }
 .enonce > .etiquette { font: 600 11.5px/1 var(--f-texte); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .enonce p, .enonce li { font-size: 15.5px; color: var(--ink-2); }
-.sous { margin: 34px 0 0; padding-top: 26px; border-top: 2px solid var(--ink); scroll-margin-top: 70px; }
+.sous { margin: 34px 0 0; padding-top: 26px; border-top: 2px solid var(--ink); scroll-margin-top: 112px; }
 .sous-tete { display: flex; gap: 12px; align-items: baseline; margin-bottom: 10px; }
 .sous-lettre { flex: none; font: 700 20px/1 var(--f-titre); }
 .sous-titre { font: 600 19px/1.3 var(--f-titre); margin: 0; text-wrap: balance; }
@@ -421,6 +421,37 @@ td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
 /* Dans une étiquette en capitales, le code garde sa casse : R distingue summary() de SUMMARY(). */
 .etiquette code { text-transform: none; letter-spacing: 0; }
 
+/* ---- Navigation : sous-questions dans le sommaire, barre d'étapes, précédent / suivant ---- */
+.nav-q .t { min-width: 0; }
+.nav-sous { display: none; flex-direction: column; margin: 0 0 6px 42px; padding-left: 8px; border-left: 1px dashed var(--line-2); }
+.nav-sous.ouverte { display: flex; }
+.nav-sous a { display: flex; gap: 7px; align-items: baseline; padding: 3px 6px; border-radius: var(--r-s); font-size: 12.5px; line-height: 1.35; color: var(--muted); text-decoration: none; }
+.nav-sous a:hover { color: var(--ink); background: var(--surface-2); }
+.nav-sous a .l { flex: none; font: 600 11.5px/1.35 var(--f-code); color: var(--muted); min-width: 12px; }
+.nav-sous a.ici { color: var(--accent-ink); background: var(--accent-soft); font-weight: 600; }
+.nav-sous a.ici .l { color: var(--accent); }
+
+.etapes { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 9; display: flex; gap: 6px; align-items: center;
+  margin: 0 0 8px; padding: 8px 0; overflow-x: auto; scrollbar-width: thin; background: var(--bg); border-bottom: 1px solid var(--line); }
+.etapes-n { flex: none; font: 600 12px/1 var(--f-code); color: var(--muted); padding-right: 4px; }
+.etapes a { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 5px 10px; border: 1px solid var(--line-2);
+  border-radius: 999px; background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: 13px; line-height: 1.2; }
+.etapes a b { font: 600 12px/1 var(--f-code); color: var(--muted); }
+.etapes a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etapes a:hover { border-color: var(--accent); color: var(--ink); }
+.etapes a.ici { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.etapes a.ici b { color: var(--on-accent); }
+.etapes .etapes-fin { margin-left: auto; }
+.ancre-fin { scroll-margin-top: 112px; height: 1px; }
+.voisins-barre { flex: none; display: flex; gap: 6px; }
+.voisins-barre .btn { white-space: nowrap; }
+@media (max-width: 640px) {
+  .etapes a { max-width: none; } .etapes a span { display: none; } .etapes .etapes-fin span { display: inline; }
+  .voisins-barre .btn { padding-inline: 9px; }
+  .barre .progression span:not(.jauge) { display: none; }
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 </style>
 </head>
 <body>
@@ -447,6 +478,7 @@ td:first-child code, th code { white-space: nowrap; overflow-wrap: normal; }
         <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
       <div class="fil" id="fil"></div>
+      <div class="voisins-barre" id="voisins-barre" hidden></div>
       <a class="progression" id="progression" href="#choix" title="Questions marquées comme maîtrisées"></a>
     </header>
     <main class="vue" id="vue" tabindex="-1"></main>
@@ -2185,6 +2217,19 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
   const rubrique = (t) => h('div', { class: 'rubrique', text: t });
 
   // ------------------------------------------------------------------- sommaire
+  // Lien d'une question dans le sommaire, suivi de la liste de ses sous-questions (affichée
+  // seulement pour la question ouverte).
+  function lienQ(id) {
+    const q = M.questions[id], e = A.store.etat.q[id], frag = document.createDocumentFragment();
+    frag.append(h('a', { class: 'nav-q' + (e && e.fait ? ' fait' : ''), href: routeQ(id), 'data-route': q.route }, h('span', { class: 'n', text: id }), h('span', { class: 't', text: q.titre })));
+    const sous = q.sous.filter((s) => s.id);
+    if (sous.length) {
+      const l = h('div', { class: 'nav-sous', 'data-q': q.route });
+      sous.forEach((s) => l.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id }, h('span', { class: 'l', text: s.id }), h('span', { text: s.titre }))));
+      frag.append(l);
+    }
+    return frag;
+  }
   function dessinerNav() {
     const nav = $('nav-liste'); nav.textContent = '';
     const lien = (route, pico, texte) => h('a', { class: 'nav-lien', href: '#' + route, 'data-route': route }, h('span', { class: 'pico', text: pico }), texte);
@@ -2193,16 +2238,16 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     M.parties.forEach((p) => {
       const b = A.store.bilanPartie(p.num);
       const d = h('details', { class: 'nav-partie', 'data-partie': p.id });
+      // Une seule partie dépliée à la fois : le sommaire reste court.
+      d.addEventListener('toggle', () => { if (d.open) document.querySelectorAll('.nav-partie').forEach((x) => { if (x !== d) x.open = false; }); });
       d.append(h('summary', null, h('span', { class: 'chevron' }), h('span', { class: 'num', text: String(p.num) }), h('span', { text: p.titre.split(' : ')[0] }), h('span', { class: 'compte', text: b.fait + '/' + b.total })));
       const liste = h('div', { class: 'nav-questions' });
       liste.append(h('a', { class: 'nav-q', href: '#' + p.id, 'data-route': p.id }, h('span', { class: 'n', text: '·' }), 'Présentation de la partie'));
       p.sections.forEach((sec) => {
         liste.append(h('div', { class: 'nav-sec', text: sec.id + '. ' + sec.titre }));
-        sec.questions.forEach((id) => { const q = M.questions[id], e = A.store.etat.q[id];
-          liste.append(h('a', { class: 'nav-q' + (e && e.fait ? ' fait' : ''), href: routeQ(id), 'data-route': q.route }, h('span', { class: 'n', text: id }), q.titre)); });
+        sec.questions.forEach((id) => liste.append(lienQ(id)));
       });
-      if (!p.sections.length) p.questions.forEach((id) => { const q = M.questions[id], e = A.store.etat.q[id];
-        liste.append(h('a', { class: 'nav-q' + (e && e.fait ? ' fait' : ''), href: routeQ(id), 'data-route': q.route }, h('span', { class: 'n', text: id }), q.titre)); });
+      if (!p.sections.length) p.questions.forEach((id) => liste.append(lienQ(id)));
       d.append(liste); nav.append(d);
     });
     nav.append(h('div', { class: 'nav-titre', text: 'Pour finir le travail' }));
@@ -2215,6 +2260,7 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     document.querySelectorAll('#nav-liste [data-route]').forEach((a) => a.classList.toggle('actif', a.dataset.route === base || (a.dataset.route === 'bases' && /^b-/.test(base))));
     const q = /^q-(\d+)-/.exec(base), partie = q ? 'p' + q[1] : /^p\d$/.test(base) ? base : null;
     document.querySelectorAll('.nav-partie').forEach((d) => { if (d.dataset.partie === partie) d.open = true; });
+    document.querySelectorAll('#nav-liste .nav-sous').forEach((l) => l.classList.toggle('ouverte', l.dataset.q === base));
     const actif = document.querySelector('#nav-liste .actif');
     if (actif && actif.scrollIntoView && window.innerWidth > 960) actif.scrollIntoView({ block: 'nearest' });
   }
@@ -2225,7 +2271,14 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     const sv = $('sauvegarde'), mode = A.store.mode();
     sv.innerHTML = mode === 'compte' ? 'Notes et choix <b>enregistrés dans ton compte Claude</b> (privés) et dans ce navigateur.' : mode === 'local' ? 'Notes et choix <b>enregistrés dans ce navigateur</b>. Exporte-les depuis « Mon rapport » pour les garder.' : 'Stockage indisponible ici : <b>exporte tes notes</b> avant de fermer la page.';
   }
+  // Boutons « question précédente / suivante » dans la barre du haut (pages de question seulement).
+  function filVoisins(hAvant, tAvant, hApres, tApres) {
+    const b = $('voisins-barre'); b.textContent = ''; b.hidden = false;
+    b.append(h('a', { class: 'btn petit', href: hAvant, title: 'Précédent : ' + tAvant, 'aria-label': 'Précédent : ' + tAvant }, '← ' + tAvant),
+      h('a', { class: 'btn petit plein', href: hApres, title: 'Suivant : ' + tApres, 'aria-label': 'Suivant : ' + tApres }, tApres + ' →'));
+  }
   function fil(parts) {
+    const vb = $('voisins-barre'); if (vb) { vb.hidden = true; vb.textContent = ''; }
     const f = $('fil'); f.textContent = '';
     parts.forEach((p, i) => { if (i) f.append(h('span', { class: 'sep', text: '›' })); f.append(p[1] ? h('a', { href: p[1], text: p[0] }) : h('span', { text: p[0] })); });
   }
@@ -2352,12 +2405,22 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     if (!q) return vueIntrouvable();
     const p = M.parties.find((x) => x.num === q.partie), sec = p.sections.find((x) => x.id === q.section);
     fil([['Accueil', '#accueil'], ['Partie ' + p.num, '#' + p.id], ['Question ' + q.id]]);
+    const vs = A.voisins(q.id);
+    filVoisins(vs.avant ? routeQ(vs.avant) : '#' + p.id, vs.avant ? vs.avant : 'Partie ' + p.num, vs.apres ? routeQ(vs.apres) : '#comparatif', vs.apres ? vs.apres : 'Fin');
     const v = h('div');
     const tete = h('div', { class: 'q-tete' }, h('div', { class: 'q-num' }, h('b', { text: q.id }), 'Partie ' + p.num + (sec ? ' · ' + sec.id + '. ' + sec.titre : '')), h('h1', { text: q.titre }));
     if (q.enonce) tete.append(bloc('enonce', 'Énoncé', q.enonce));
     if (q.intro) tete.append(h('div', { html: md(q.intro) }));
     if (q.concepts.length) { const puces = h('div', { class: 'puces' }, h('span', { class: 'puce', text: 'À revoir avant :' })); q.concepts.forEach((c) => { const l = M.lecons.find((x) => x.id === c); if (l) puces.append(h('a', { class: 'puce', href: '#' + l.route, text: l.titre })); }); tete.append(puces); }
     v.append(tete);
+    const avecLettres = q.sous.filter((s) => s.id);
+    const etapes = h('nav', { class: 'etapes', 'aria-label': 'Sous-questions de la question ' + q.id });
+    if (avecLettres.length > 1) {
+      etapes.append(h('span', { class: 'etapes-n', text: q.id }));
+      avecLettres.forEach((s) => etapes.append(h('a', { href: '#' + q.route + '-' + s.id, 'data-sous': s.id, title: s.titre }, h('b', { text: s.id }), h('span', { text: s.titre }))));
+    }
+    if (q.retenir || q.quiz.length || q.oral.length) etapes.append(h('a', { href: '#' + q.route + '-fin', 'data-sous': 'fin', class: 'etapes-fin' }, h('span', { text: 'Bilan et oral' })));
+    if (etapes.children.length > 1) v.append(etapes);
     q.sous.forEach((s) => {
       const sect = h('section', { class: 'sous', id: 's-' + (s.id || 'r') });
       if (s.id || s.titre) sect.append(h('div', { class: 'sous-tete' }, s.id ? h('span', { class: 'sous-lettre', text: lettre(s) }) : null, h('h2', { class: 'sous-titre', text: s.titre || 'Réponse' })));
@@ -2373,6 +2436,7 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
       sect.append(blocVersion(q, s));
       v.append(sect);
     });
+    v.append(h('div', { class: 'ancre-fin', id: 's-fin' }));
     if (q.retenir) v.append(h('h2', { text: 'À retenir' }), h('div', { html: md(':::cle L’essentiel de la question ' + q.id + '\n' + q.retenir + '\n:::') }));
     if (q.quiz.length) v.append(h('h2', { text: 'Vérifie que tu as compris' }), blocQuiz(q));
     if (q.oral.length) { v.append(h('h2', { text: 'Questions possibles à l’oral' }), h('p', { class: 'widget-aide', text: 'Réponds à voix haute avant de déplier la réponse.' })); q.oral.forEach((o, i) => v.append(carteOral(q.id + '#' + i, o))); }
@@ -2545,6 +2609,20 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
 
   // -------------------------------------------------------------------- routeur
   const PAGES = { accueil: vueAccueil, bases: vueBases, comparatif: vuePage('comparatif', 'ChatGPT vs Claude'), choix: vueChoix, atelier: vuePage('atelier', 'Atelier R'), oral: vueOral, glossaire: vueGlossaire };
+  let reperePlanifie = false;
+  function reperer() {
+    reperePlanifie = false;
+    const sects = document.querySelectorAll('#vue section.sous[id^="s-"], #vue .ancre-fin');
+    if (!sects.length) return;
+    const haut = 140; let courant = null;
+    sects.forEach((s) => { if (s.getBoundingClientRect().top <= haut) courant = s.id.slice(2); });
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) courant = sects[sects.length - 1].id.slice(2);
+    document.querySelectorAll('.etapes a, .nav-sous.ouverte a').forEach((a) => a.classList.toggle('ici', a.dataset.sous === courant));
+    const ici = document.querySelector('.etapes a.ici');
+    if (ici) { const bar = ici.parentElement, g = ici.offsetLeft - bar.scrollLeft; if (g < 40 || g + ici.offsetWidth > bar.clientWidth - 40) bar.scrollTo({ left: ici.offsetLeft - 40, behavior: 'smooth' }); }
+  }
+  window.addEventListener('scroll', () => { if (!reperePlanifie) { reperePlanifie = true; requestAnimationFrame(reperer); } }, { passive: true });
+
   function router() {
     const route = decodeURIComponent(location.hash.replace(/^#/, '')) || 'accueil';
     const memeQuestion = /^q-/.test(route) && route.replace(/^(q-\d+-\d+).*$/, '$1') === routeActive.replace(/^(q-\d+-\d+).*$/, '$1') && $('vue').firstChild;
@@ -2558,6 +2636,7 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
     marquerActif();
     const ancre = /^q-\d+-\d+-(\w+)$/.exec(route), cible = ancre && document.getElementById('s-' + ancre[1]);
     if (cible) cible.scrollIntoView(); else window.scrollTo(0, 0);
+    requestAnimationFrame(reperer);
   }
 
   // ------------------------------------------------------- glossaire en bulle
@@ -2601,7 +2680,7 @@ window.__DONNEES = {"communes":{"colonnes":["refnis","nom","region","prix","rev_
 
   // ------------------------------------------------------------- menu mobile
   function fermerNav() { $('nav').classList.remove('ouvert'); $('voile').hidden = true; $('bouton-menu').setAttribute('aria-expanded', 'false'); }
-  function ouvrirNav() { $('nav').classList.add('ouvert'); $('voile').hidden = false; $('bouton-menu').setAttribute('aria-expanded', 'true'); }
+  function ouvrirNav() { $('nav').classList.add('ouvert'); $('voile').hidden = false; $('bouton-menu').setAttribute('aria-expanded', 'true'); const ac = document.querySelector('#nav-liste .nav-sous.ouverte a.ici') || document.querySelector('#nav-liste .actif'); if (ac) ac.scrollIntoView({ block: 'center' }); }
 
   function demarrer() {
     A.store.demarrer();
