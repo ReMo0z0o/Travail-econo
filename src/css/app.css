@@ -85,8 +85,11 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
 @media (max-width: 960px) {
   .app { grid-template-columns: minmax(0, 1fr); }
-  .nav { position: fixed; inset: 0 auto 0 0; width: min(320px, 88vw); height: auto; transform: translateX(-102%); transition: transform .2s ease; box-shadow: var(--ombre); padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .nav { position: fixed; top: 0; bottom: 0; left: 0; width: min(320px, 88vw); height: 100%; max-height: 100dvh; transform: translateX(-102%); transition: transform .2s ease;
+    overflow-y: scroll; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain; box-shadow: var(--ombre); padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
   .nav.ouvert { transform: none; }
+  /* Pendant que le menu est ouvert, seul le menu défile : la page derrière ne capte plus le geste. */
+  html.menu-ouvert, html.menu-ouvert body { overflow: hidden; overscroll-behavior: none; }
   .bouton-icone { display: inline-flex; }
 }
 
@@ -104,7 +107,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .recherche-resultats a:hover, .recherche-resultats a:focus { background: var(--accent-soft); }
 .recherche-resultats small { display: block; color: var(--muted); font-size: 12px; }
 .recherche-resultats .vide { padding: 10px; color: var(--muted); font-size: 13.5px; }
-#nav-liste { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+#nav-liste { display: flex; flex-direction: column; gap: 2px; flex: 1 0 auto; }
 .nav-lien { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-s); color: var(--ink-2); text-decoration: none; font-size: 14.5px; font-weight: 500; }
 .nav-lien:hover { background: var(--surface-3); color: var(--ink); }
 .nav-lien.actif { background: var(--accent-soft); color: var(--accent-ink); }
@@ -119,7 +122,13 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .nav-partie > summary .chevron { flex: none; width: 10px; height: 10px; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; margin-right: 3px; }
 .nav-partie[open] > summary .chevron { transform: rotate(45deg); }
 .nav-questions { display: flex; flex-direction: column; margin: 2px 0 6px 18px; border-left: 1px solid var(--line); }
-.nav-sec { margin: 8px 0 2px 12px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.nav-bloc > summary { list-style: none; cursor: pointer; }
+.nav-bloc > summary::-webkit-details-marker { display: none; }
+.nav-sec { display: flex; align-items: center; gap: 7px; margin: 4px 0 1px; padding: 6px 8px 6px 12px; font-size: 12px; color: var(--ink-2); font-weight: 600; border-radius: var(--r-s); }
+.nav-sec:hover { background: var(--surface-2); color: var(--ink); }
+.nav-sec .chevron { flex: none; width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; }
+.nav-bloc[open] > .nav-sec .chevron { transform: rotate(45deg); }
+.nav-sec .compte { margin-left: auto; font: 500 11px/1 var(--f-code); color: var(--muted); white-space: nowrap; }
 .nav-q { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px 4px 12px; margin-left: -1px; border-left: 2px solid transparent; color: var(--ink-2); text-decoration: none; font-size: 13.5px; line-height: 1.35; }
 .nav-q:hover { color: var(--ink); background: var(--surface-2); }
 .nav-q.actif { border-left-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
