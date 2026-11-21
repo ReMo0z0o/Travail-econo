@@ -20,38 +20,8 @@
   --f-math: "STIX Two Text", "Cambria Math", "Times New Roman", serif;
   --r: 8px; --r-s: 5px; --nav-l: 300px;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0c1016; --surface: #151a22; --surface-2: #1a2029; --surface-3: #212835;
-    --ink: #e7ebf1; --ink-2: #b5bdca; --muted: #8791a2; --line: #262d39; --line-2: #37414f;
-    --accent: #8ea6ff; --accent-ink: #b6c5ff; --accent-soft: #1b2548; --on-accent: #0c1016;
-    --gpt: #4fc4a6; --gpt-soft: #12302a; --claude: #ee9960; --claude-soft: #35210f;
-    --ok: #6fd96f; --ok-soft: #12301a; --ok-mark: #0ca30c;
-    --warn: #f5c451; --warn-soft: #33270a; --warn-mark: #fab219;
-    --bad: #f39a9a; --bad-soft: #3a1717; --bad-mark: #d03b3b;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s-mute: #6c7584;
-    --s1-soft: rgba(57,135,229,.18); --s2-soft: rgba(217,89,38,.18); --s3-soft: rgba(25,158,112,.2);
-    --grid: #232a35; --axis: #3a4350;
-    --code-bg: #10151c; --tok-com: #8791a2; --tok-str: #4fc4a6; --tok-num: #ee9960; --tok-fn: #8ea6ff;
-    --ombre: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0c1016; --surface: #151a22; --surface-2: #1a2029; --surface-3: #212835;
-  --ink: #e7ebf1; --ink-2: #b5bdca; --muted: #8791a2; --line: #262d39; --line-2: #37414f;
-  --accent: #8ea6ff; --accent-ink: #b6c5ff; --accent-soft: #1b2548; --on-accent: #0c1016;
-  --gpt: #4fc4a6; --gpt-soft: #12302a; --claude: #ee9960; --claude-soft: #35210f;
-  --ok: #6fd96f; --ok-soft: #12301a; --ok-mark: #0ca30c;
-  --warn: #f5c451; --warn-soft: #33270a; --warn-mark: #fab219;
-  --bad: #f39a9a; --bad-soft: #3a1717; --bad-mark: #d03b3b;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s-mute: #6c7584;
-  --s1-soft: rgba(57,135,229,.18); --s2-soft: rgba(217,89,38,.18); --s3-soft: rgba(25,158,112,.2);
-  --grid: #232a35; --axis: #3a4350;
-  --code-bg: #10151c; --tok-com: #8791a2; --tok-str: #4fc4a6; --tok-num: #ee9960; --tok-fn: #8ea6ff;
-  --ombre: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
-  color-scheme: dark;
-}
+/* Thème clair seulement, quel que soit le réglage de l'appareil ou du lecteur. */
+:root, :root[data-theme="dark"] { color-scheme: light; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
