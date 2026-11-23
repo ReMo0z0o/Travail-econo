@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Partie 3 expliquée : la double différence</title>
+<!-- Vidéo explicative de la partie 3, rendue image par image par video/rendre.cjs.
+     Chaque scène a des sous-titres ; les éléments marqués data-in="k" apparaissent au début du
+     sous-titre k de la scène (data-in="k+1.5" : 1,5 s après). La durée de chaque sous-titre dépend
+     de sa longueur, pour laisser le temps de lire. -->
+<style>
+@font-face { font-family: "Titre"; font-weight: 500 700; src: url(../outils/polices/space-grotesk-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Titre"; font-weight: 700; src: url(../outils/polices/space-grotesk-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Texte"; font-weight: 400; src: url(../outils/polices/ibm-plex-sans-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Texte"; font-weight: 400; src: url(../outils/polices/ibm-plex-sans-latin-ext-400-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+2000-206F; }
+@font-face { font-family: "Texte"; font-weight: 600; src: url(../outils/polices/ibm-plex-sans-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Texte"; font-weight: 700; src: url(../outils/polices/ibm-plex-sans-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Code"; font-weight: 400; src: url(../outils/polices/ibm-plex-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Code"; font-weight: 500; src: url(../outils/polices/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); }
+:root {
+  --bg: #f4f5f7; --surface: #fff; --ink: #0f1b2d; --ink-2: #3f4b5e; --muted: #6b7687; --line: #dfe3ea;
+  --accent: #2747c9; --soft: #e9edfc; --t: #2a78d6; --c: #eb6834; --g: #1baf7a; --bad: #c43d3d; --nuit: #0b1220;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink); font: 400 34px/1.4 "Texte", sans-serif; }
+.scene { position: absolute; inset: 0 0 230px 0; padding: 70px 110px 0; opacity: 0; }
+.etiquette { position: absolute; top: 34px; left: 110px; font: 600 22px/1 "Texte"; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.etiquette b { color: var(--accent); }
+h1 { font: 700 76px/1.08 "Titre", sans-serif; margin: 0 0 24px; letter-spacing: -.01em; }
+h2 { font: 700 60px/1.1 "Titre", sans-serif; margin: 40px 0 30px; letter-spacing: -.01em; }
+.sous { font-size: 40px; color: var(--ink-2); }
+.carte { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 26px 32px; }
+.grand { font: 700 120px/1 "Titre"; }
+.code { font: 500 36px/1.4 "Code", monospace; background: #eef1f6; border-radius: 12px; padding: 18px 26px; display: inline-block; }
+.t { color: var(--t); } .c { color: var(--c); } .g { color: var(--g); } .a { color: var(--accent); } .m { color: var(--muted); }
+.rangee { display: flex; gap: 36px; align-items: flex-start; }
+.pastille { display: inline-block; padding: 6px 18px; border-radius: 999px; font: 600 28px/1.2 "Texte"; }
+svg text { font-family: "Texte", sans-serif; }
+#sous-titre { position: absolute; left: 0; right: 0; bottom: 0; height: 230px; background: var(--ink); color: #fff; display: flex; align-items: center; padding: 0 140px; }
+#sous-titre p { margin: 0; font: 500 40px/1.38 "Texte"; max-width: 1640px; }
+#sous-titre p b { color: #9fb4ff; }
+#avance { position: absolute; left: 0; bottom: 0; height: 8px; background: var(--accent); }
+#chapitre { position: absolute; right: 110px; top: 30px; font: 600 24px/1 "Texte"; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="scenes"></div>
+
+<div id="sous-titre"><p></p></div>
+<div id="avance"></div>
+<script>
+'use strict';
+// ------------------------------------------------------------------ scènes
+// Chaque scène : un titre de chapitre, des sous-titres (narration) et un fragment HTML/SVG.
+const S = [];
+const scene = (chap, caps, html) => S.push({ chap, caps, html });
+
+// Petits utilitaires de dessin SVG.
+const barre = (x, base, haut, larg, couleur, inn, val, etiquette) =>
+  `<g data-in="${inn}"><rect data-grow="${inn}" x="${x}" y="${base - haut}" width="${larg}" height="${haut}" rx="6" fill="${couleur}" style="transform-origin:${x}px ${base}px"/>` +
+  `<text x="${x + larg / 2}" y="${base - haut - 16}" text-anchor="middle" font-size="40" font-weight="700" fill="${couleur}">${val}</text>` +
+  `<text x="${x + larg / 2}" y="${base + 44}" text-anchor="middle" font-size="30" fill="#3f4b5e">${etiquette}</text></g>`;
+const accolade = (x, y1, y2, texte, inn, couleur = '#0f1b2d') =>
+  `<g data-in="${inn}"><path d="M${x} ${y1} h18 V${y2} h-18" fill="none" stroke="${couleur}" stroke-width="4"/>` +
+  `<text x="${x + 34}" y="${(y1 + y2) / 2 + 14}" font-size="40" font-weight="700" fill="${couleur}">${texte}</text></g>`;
+
+// 1. Titre
+scene('Introduction', [
+  'Partie 3 du travail : <b>l’électrification au Burkina Faso</b>.',
+  'Dans cette vidéo, on part de zéro : aucune connaissance en économétrie n’est nécessaire.',
+  'À la fin, tu sauras expliquer d’où vient le chiffre central de la partie : <b>+38 points</b>.'
+], `<div style="margin-top:150px">
+  <div class="pastille" style="background:var(--soft);color:var(--accent)" data-in="0">ECGEB352 · Partie 3</div>
+  <h1 style="font-size:96px;margin-top:30px" data-in="0+0.3">Électrification au Burkina Faso</h1>
+  <div class="sous" data-in="0+0.8">La double différence, expliquée depuis zéro</div>
+  <div class="grand a" style="margin-top:70px" data-in="2">+38 points</div>
+</div>`);
+
+// 2. La question
+let maisons = '';
+for (let i = 0; i < 100; i++) { const x = 60 + (i % 20) * 44, y = 60 + Math.floor(i / 20) * 52, allume = [7, 33, 58, 71, 94].includes(i);
+  maisons += `<path d="M${x} ${y + 14} l16 -14 l16 14 v18 h-32z" fill="${allume ? '#f5b71f' : '#c6cdd8'}"/>`; }
+scene('La question', [
+  'Au Burkina Faso, en 2014, <b>moins de 5 ménages ruraux sur 100</b> avaient l’électricité.',
+  'Raccorder un village au réseau coûte cher. Est-ce que ça vaut la peine, si si peu de ménages se branchent ?',
+  'Peut-être, si le réseau profite à <b>tout le village</b> : éclairage public, écoles électrifiées, pompes à eau.',
+  'La question de la partie 3 : <b>l’arrivée du réseau change-t-elle quelque chose pour la localité entière ?</b>'
+], `<h2>Un réseau électrique… pour qui ?</h2>
+<div class="rangee">
+  <div class="carte" data-in="0"><svg width="960" height="330">${maisons}</svg>
+    <div style="font-size:32px"><b style="color:#d49a00">5 ménages sur 100</b> raccordés (2014)</div></div>
+  <div style="display:flex;flex-direction:column;gap:22px;margin-top:10px">
+    <div class="carte" data-in="2">💡 Éclairage public</div>
+    <div class="carte" data-in="2+0.6">🏫 Écoles électrifiées</div>
+    <div class="carte" data-in="2+1.2">🚰 Pompes à eau</div>
+  </div>
+</div>`);
+
+// 3. Mesurer depuis l'espace
+let points = '';
+const poss = [[120,90],[300,160],[480,80],[640,210],[200,300],[420,340],[700,90],[820,280],[560,420],[90,420],[350,470],[760,450]];
+poss.forEach(([x, y], i) => { const lum = [2, 5, 9].includes(i);
+  points += `<circle cx="${x}" cy="${y}" r="10" fill="#3a4560"/>` + (lum ? `<circle data-in="1+${0.3 * i / 3}" cx="${x}" cy="${y}" r="26" fill="#ffd35c" opacity=".9"/><circle data-in="1" cx="${x}" cy="${y}" r="50" fill="#ffd35c" opacity=".25"/>` : ''); });
+scene('Mesurer depuis l’espace', [
+  'Comment savoir si un village a changé ? Les chercheurs utilisent des <b>images de la Terre prises la nuit</b> par satellite.',
+  'Pour chaque village et chaque année, une variable dit si on voit de la lumière. Elle s’appelle <b>nl_extensive</b>.',
+  'Elle vaut <b>1</b> si une lumière est détectée, et <b>0</b> sinon.',
+  'La moyenne de cette variable sur un groupe, c’est donc la <b>part des villages éclairés</b>. Ici : 3 villages sur 12, soit 25 %.'
+], `<h2>On regarde les villages… de nuit</h2>
+<div class="rangee">
+  <div style="background:var(--nuit);border-radius:18px;padding:10px" data-in="0"><svg width="900" height="540">${points}</svg></div>
+  <div style="display:flex;flex-direction:column;gap:26px;width:620px">
+    <div class="carte" data-in="1"><div class="code" style="font-size:34px">nl_extensive</div></div>
+    <div class="carte" data-in="2"><b style="color:#d49a00">1</b> = lumière détectée<br><b class="m">0</b> = village dans le noir</div>
+    <div class="carte" data-in="3">Moyenne = <b class="a">3 / 12 = 25 %</b><br><span class="m" style="font-size:28px">part des villages éclairés</span></div>
+  </div>
+</div>`);
+
+// 4. Les données : un panel
+let grille = '';
+const lignes = ['Localité 1', 'Localité 2', 'Localité 3', 'Localité 4', '…', 'Localité 574'];
+for (let a = 0; a < 12; a++) grille += `<text x="${250 + a * 112 + 50}" y="40" text-anchor="middle" font-size="26" fill="#6b7687">${2003 + a}</text>`;
+lignes.forEach((l, r) => { grille += `<text x="0" y="${96 + r * 74}" font-size="28" fill="#3f4b5e">${l}</text>`;
+  if (l === '…') return;
+  for (let a = 0; a < 12; a++) { const lum = (r === 1 && a >= 7) || (r === 3 && a >= 9);
+    grille += `<rect data-in="${r < 1 ? 0 : 1}+${0.04 * (a + 12 * r)}" x="${250 + a * 112}" y="${62 + r * 74}" width="100" height="52" rx="8" fill="${lum ? '#ffd35c' : '#1f2a3d'}"/>`; } });
+scene('Les données', [
+  'Les données suivent <b>574 localités</b> pendant <b>12 années</b>, de 2003 à 2014.',
+  'Chaque ligne du fichier, c’est <b>une localité observée une année donnée</b> : 574 × 12 = 6 888 lignes.',
+  'On appelle ça un <b>panel</b> : les mêmes unités, observées plusieurs fois.',
+  'Avant 2008, presque tout est noir : à peine <b>2 %</b> des localités-années sont éclairées.'
+], `<h2>Un panel : les mêmes localités, chaque année</h2>
+<div class="rangee">
+  <svg width="1600" height="500">${grille}</svg>
+</div>
+<div style="position:absolute;right:110px;top:70px" class="carte" data-in="1+1"><b class="a">574 × 12 = 6 888</b> lignes</div>`);
+
+// 5. Le contrefactuel
+scene('Le vrai problème', [
+  'Pour mesurer l’effet du réseau sur un village, il faudrait le comparer <b>à lui-même, sans le réseau</b>.',
+  'Mais ce village-là n’existe pas : une fois raccordé, on ne verra jamais ce qu’il serait devenu sans électricité.',
+  'Cette situation imaginaire s’appelle le <b>contrefactuel</b>. Toute la méthode consiste à l’estimer à l’aide d’autres villages.'
+], `<h2>Comparer un village… à lui-même</h2>
+<div class="rangee" style="gap:80px;margin-top:40px;align-items:center">
+  <div class="carte" style="width:560px;text-align:center" data-in="0">
+    <div style="font-size:120px">🏘️💡</div><b>Avec le réseau</b><br><span class="g">observé ✔</span></div>
+  <div style="font:700 80px Titre" data-in="0+0.6">vs</div>
+  <div class="carte" style="width:560px;text-align:center;border-style:dashed;opacity:.9" data-in="0+1">
+    <div style="font-size:120px;filter:grayscale(1);opacity:.5">🏘️</div><b>Sans le réseau</b><br><span style="color:var(--bad)" data-in="1">jamais observé ✘</span></div>
+</div>
+<div class="carte" style="margin-top:40px;display:inline-block" data-in="2">Le <b class="a">contrefactuel</b> : ce qui se serait passé sans le traitement.</div>`);
+
+// 6. Les deux groupes
+const xAn = (a) => 80 + (a - 2003) * 108;
+let frise = '';
+for (let a = 2003; a <= 2017; a++) frise += `<line x1="${xAn(a)}" y1="250" x2="${xAn(a)}" y2="262" stroke="#6b7687" stroke-width="3"/><text x="${xAn(a)}" y="300" text-anchor="middle" font-size="26" fill="#3f4b5e">${a}</text>`;
+scene('Deux groupes', [
+  'On choisit deux groupes. Le <b>groupe traité</b> : 59 localités raccordées au réseau en 2008 ou 2009.',
+  'Le <b>groupe de comparaison</b> : 238 localités raccordées plus tard, entre 2015 et 2017. Jusqu’en 2014, elles n’ont pas l’électricité.',
+  'Pourquoi elles ? Elles ont été choisies par le même programme, donc elles ressemblent aux traitées. Seul le calendrier change.',
+  'On écarte les localités raccordées en 2010-2014 : elles s’allument <b>pendant</b> la période étudiée. Elles fausseraient la comparaison.',
+  'On écarte aussi les localités jamais raccordées : sans doute plus petites et plus isolées, elles ne sont pas comparables.',
+  'Enfin, on retire 2008 et 2009, les années de raccordement. <b>Avant</b> = 2003 à 2007. <b>Après</b> = 2010 à 2014.'
+], `<h2>Qui compare-t-on ?</h2>
+<svg width="1700" height="560">
+  <line x1="60" y1="256" x2="1640" y2="256" stroke="#6b7687" stroke-width="4"/>${frise}
+  <g data-in="0"><rect x="${xAn(2008) - 40}" y="150" width="${xAn(2009) - xAn(2008) + 80}" height="70" rx="12" fill="#2a78d6"/>
+    <text x="${(xAn(2008) + xAn(2009)) / 2}" y="196" text-anchor="middle" font-size="30" font-weight="700" fill="#fff">Traitées : 59</text></g>
+  <g data-in="1"><rect x="${xAn(2015) - 40}" y="150" width="${xAn(2017) - xAn(2015) + 80}" height="70" rx="12" fill="#eb6834"/>
+    <text x="${xAn(2016)}" y="196" text-anchor="middle" font-size="30" font-weight="700" fill="#fff">Comparaison : 238</text></g>
+  <g data-in="3"><rect x="${xAn(2010) - 40}" y="70" width="${xAn(2014) - xAn(2010) + 80}" height="60" rx="12" fill="#c6cdd8"/>
+    <text x="${xAn(2012)}" y="111" text-anchor="middle" font-size="28" fill="#3f4b5e">Raccordées 2010-2014 ✘</text></g>
+  <g data-in="5"><rect x="${xAn(2003) - 30}" y="340" width="${xAn(2007) - xAn(2003) + 60}" height="64" rx="12" fill="#e9edfc"/>
+    <text x="${xAn(2005)}" y="383" text-anchor="middle" font-size="32" font-weight="700" fill="#2747c9">AVANT</text>
+    <rect x="${xAn(2008) - 30}" y="340" width="${xAn(2009) - xAn(2008) + 60}" height="64" rx="12" fill="#f3d6d6"/>
+    <text x="${(xAn(2008) + xAn(2009)) / 2}" y="383" text-anchor="middle" font-size="28" fill="#c43d3d">retiré</text>
+    <rect x="${xAn(2010) - 30}" y="340" width="${xAn(2014) - xAn(2010) + 60}" height="64" rx="12" fill="#e9edfc"/>
+    <text x="${xAn(2012)}" y="383" text-anchor="middle" font-size="32" font-weight="700" fill="#2747c9">APRÈS</text></g>
+</svg>
+<div class="carte" style="position:absolute;left:110px;top:640px;font-size:32px" data-in="4">✘ Jamais raccordées : pas comparables</div>`);
+
+// 7. Les quatre nombres
+const cellule = (v, cl, inn) => `<td data-in="${inn}" style="padding:26px 50px;text-align:center"><span class="grand ${cl}" style="font-size:96px">${v}</span></td>`;
+scene('Quatre nombres', [
+  'On calcule la part de localités éclairées dans chaque groupe, avant et après. <b>Quatre nombres</b> suffisent.',
+  'Les traitées : <b>5,2 %</b> avant, <b>44,1 %</b> après.',
+  'Le groupe de comparaison : <b>2,7 %</b> avant, <b>3,7 %</b> après.',
+  'Avec ces quatre nombres, essayons d’abord deux comparaisons naïves… et voyons pourquoi elles ne suffisent pas.'
+], `<h2>Part des localités éclairées</h2>
+<table class="carte" style="border-collapse:separate;font-size:34px" data-in="0">
+  <tr><th></th><th style="padding:10px 50px" class="m">Avant<br><span style="font-size:26px">2003-2007</span></th><th style="padding:10px 50px" class="m">Après<br><span style="font-size:26px">2010-2014</span></th></tr>
+  <tr><th style="text-align:left;padding-right:30px" class="t">Traitées</th>${cellule('5,2 %', 't', '1')}${cellule('44,1 %', 't', '1+1')}</tr>
+  <tr><th style="text-align:left;padding-right:30px" class="c">Comparaison</th>${cellule('2,7 %', 'c', '2')}${cellule('3,7 %', 'c', '2+1')}</tr>
+</table>`);
+
+// 8. Comparaison naïve 1
+const B = 520, k = 9.5;
+scene('Comparaison naïve n°1', [
+  'Première idée : comparer les deux groupes <b>après 2010</b>. 44,1 % contre 3,7 % : un écart de <b>40,5 points</b>.',
+  'Problème : les deux groupes étaient <b>déjà un peu différents</b> avant le réseau : 5,2 % contre 2,7 %.',
+  'Une partie de l’écart existait donc déjà. C’est un <b>biais de sélection</b> : les groupes n’étaient pas identiques au départ.'
+], `<h2>« Après seulement » : 40,5 points ?</h2>
+<svg width="1700" height="620">
+  <text x="330" y="${B + 100}" text-anchor="middle" font-size="32" font-weight="700" fill="#0f1b2d">APRÈS</text>
+  ${barre(160, B, 44.1 * k, 140, '#2a78d6', '0', '44,1 %', 'Traitées')}${barre(360, B, 3.7 * k + 4, 140, '#eb6834', '0+0.4', '3,7 %', 'Comparaison')}
+  ${accolade(540, B - 44.1 * k, B - 3.7 * k, '40,5 pts', '0+1')}
+  <g data-in="1"><text x="1130" y="${B + 100}" text-anchor="middle" font-size="32" font-weight="700" fill="#0f1b2d">AVANT</text></g>
+  ${barre(960, B, 5.2 * k, 140, '#2a78d6', '1', '5,2 %', 'Traitées')}${barre(1160, B, 2.7 * k + 4, 140, '#eb6834', '1+0.3', '2,7 %', 'Comparaison')}
+  <g data-in="1+1"><text x="1130" y="300" text-anchor="middle" font-size="40" font-weight="700" fill="#c43d3d">déjà 2,5 pts d’écart</text></g>
+  <g data-in="2"><rect x="900" y="100" width="560" height="80" rx="14" fill="#f3d6d6"/><text x="1180" y="153" text-anchor="middle" font-size="36" font-weight="700" fill="#c43d3d">Biais de sélection</text></g>
+</svg>`);
+
+// 9. Comparaison naïve 2
+scene('Comparaison naïve n°2', [
+  'Deuxième idée : regarder les traitées <b>avant et après</b>. Elles passent de 5,2 % à 44,1 % : <b>+39,0 points</b>.',
+  'Problème : entre les deux périodes, d’autres choses ont changé <b>pour tout le monde</b> : croissance, lampes solaires, satellite plus sensible…',
+  'La preuve : même <b>sans réseau</b>, le groupe de comparaison a gagné 0,9 point. C’est un <b>biais de tendance</b>.'
+], `<h2>« Avant / après » : 39 points ?</h2>
+<svg width="1700" height="620">
+  <text x="330" y="${B + 100}" text-anchor="middle" font-size="32" font-weight="700" fill="#2a78d6">TRAITÉES</text>
+  ${barre(160, B, 5.2 * k, 140, '#2a78d6', '0', '5,2 %', 'Avant')}${barre(360, B, 44.1 * k, 140, '#2a78d6', '0+0.4', '44,1 %', 'Après')}
+  ${accolade(540, B - 44.1 * k, B - 5.2 * k, '+39,0 pts', '0+1')}
+  <g data-in="2"><text x="1130" y="${B + 100}" text-anchor="middle" font-size="32" font-weight="700" fill="#eb6834">COMPARAISON (sans réseau)</text></g>
+  ${barre(960, B, 2.7 * k + 4, 140, '#eb6834', '2', '2,7 %', 'Avant')}${barre(1160, B, 3.7 * k + 4, 140, '#eb6834', '2+0.3', '3,7 %', 'Après')}
+  <g data-in="2+1"><text x="1130" y="300" text-anchor="middle" font-size="40" font-weight="700" fill="#c43d3d">+0,9 pt sans réseau</text></g>
+  <g data-in="1"><rect x="900" y="100" width="560" height="80" rx="14" fill="#f3d6d6"/><text x="1180" y="153" text-anchor="middle" font-size="36" font-weight="700" fill="#c43d3d">Biais de tendance</text></g>
+</svg>`);
+
+// 10. La double différence
+const gx = (p) => 260 + p * 700, gy = (v) => 560 - v * 10;
+scene('La double différence', [
+  'La <b>double différence</b> corrige les deux biais d’un coup.',
+  'Hypothèse : sans le réseau, les traitées auraient suivi la <b>même évolution</b> que le groupe de comparaison, soit +0,9 point.',
+  'Elles seraient donc passées de 5,2 % à environ <b>6,1 %</b>. C’est la ligne en pointillés : le contrefactuel.',
+  'Or on observe 44,1 %. L’écart, c’est l’effet du réseau : <b>39,0 − 0,9 = 38,0 points</b>.',
+  'À retenir : on soustrait l’évolution du groupe de comparaison à celle du groupe traité. Une différence de différences.'
+], `<h2>Différence des différences</h2>
+<svg width="1700" height="620">
+  <line x1="200" y1="560" x2="1100" y2="560" stroke="#6b7687" stroke-width="3"/>
+  <text x="${gx(0)}" y="610" text-anchor="middle" font-size="30" fill="#3f4b5e">Avant</text><text x="${gx(1)}" y="610" text-anchor="middle" font-size="30" fill="#3f4b5e">Après</text>
+  <g data-in="0"><path data-draw="0" d="M${gx(0)} ${gy(2.7)} L${gx(1)} ${gy(3.7)}" stroke="#eb6834" stroke-width="7" fill="none"/>
+    <circle cx="${gx(0)}" cy="${gy(2.7)}" r="10" fill="#eb6834"/><circle cx="${gx(1)}" cy="${gy(3.7)}" r="10" fill="#eb6834"/>
+    <text x="${gx(1) + 20}" y="${gy(3.7) + 34}" font-size="30" fill="#eb6834" font-weight="700">Comparaison 3,7 %</text></g>
+  <g data-in="0+0.6"><path data-draw="0+0.6" d="M${gx(0)} ${gy(5.2)} L${gx(1)} ${gy(44.1)}" stroke="#2a78d6" stroke-width="7" fill="none"/>
+    <circle cx="${gx(0)}" cy="${gy(5.2)}" r="10" fill="#2a78d6"/><circle cx="${gx(1)}" cy="${gy(44.1)}" r="10" fill="#2a78d6"/>
+    <text x="${gx(1) + 20}" y="${gy(44.1) + 10}" font-size="30" fill="#2a78d6" font-weight="700">Traitées 44,1 %</text></g>
+  <g data-in="2"><path data-draw="2" d="M${gx(0)} ${gy(5.2)} L${gx(1)} ${gy(6.1)}" stroke="#2a78d6" stroke-width="5" stroke-dasharray="14 10" fill="none" opacity=".7"/>
+    <text x="${gx(1) + 20}" y="${gy(6.1) - 12}" font-size="30" fill="#2a78d6">sans réseau : 6,1 %</text></g>
+  ${accolade(gx(1) + 330, gy(44.1), gy(6.1), 'effet : +38 pts', '3', '#2747c9')}
+</svg>
+<div class="carte" style="position:absolute;right:110px;top:200px;width:560px;font-size:34px;line-height:1.7" data-in="3+1.5">
+  <span class="t">(44,1 − 5,2)</span><br>− <span class="c">(3,7 − 2,7)</span><br>= <b class="a">38,0 points</b></div>`);
+
+// 11. La régression
+const ligneCoef = (sym, val, sens, inn) => `<tr data-in="${inn}"><td style="padding:12px 24px;font:600 40px Titre">${sym}</td><td style="padding:12px 24px;font:700 40px Code" class="a">${val}</td><td style="padding:12px 24px">${sens}</td></tr>`;
+scene('La même chose, en régression', [
+  'En pratique, on fait ce calcul avec une <b>régression</b>. Elle donne le même nombre, plus une mesure de précision.',
+  'La formule contient deux <b>indicatrices</b> : treated vaut 1 pour une localité traitée ; post vaut 1 pour les années après 2009.',
+  'Chaque coefficient correspond à un morceau du tableau : le niveau de départ, l’écart de départ, la tendance commune…',
+  '… et le coefficient de <b>treated × post</b>, qui est exactement la double différence : <b>0,380</b>, soit 38 points.'
+], `<h2>Une régression, quatre coefficients</h2>
+<div class="code" data-in="0">lm(nl_extensive ~ treated * post, data = did)</div>
+<div style="margin-top:30px;font:500 40px Code" data-in="1">y = β₀ + β₁·treated + β₂·post + β₃·treated×post</div>
+<table class="carte" style="margin-top:30px;font-size:32px">
+  ${ligneCoef('β₀', '0,027', 'comparaison, avant (2,7 %)', '2')}
+  ${ligneCoef('β₁', '0,025', 'écart de départ entre groupes', '2+0.8')}
+  ${ligneCoef('β₂', '0,009', 'tendance commune (+0,9 pt)', '2+1.6')}
+  ${ligneCoef('β₃', '0,380', '<b>la double différence : l’effet</b>', '3')}
+</table>`);
+
+// 12. Tendances parallèles
+const T1 = [3.4, 5.2, 5.2, 5.2, 6.9, 5.2, 5.2, 15.5, 15.5, 65.5, 62.1, 62.1], C1 = [2.6, 2.6, 3.9, 1.8, 2.6, 2.2, 2.2, 2.2, 3.1, 4.8, 5.7, 2.6];
+const ax = (i) => 160 + i * 118, ay = (v) => 560 - v * 7;
+const chemin = (s) => s.map((v, i) => (i ? 'L' : 'M') + ax(i) + ' ' + ay(v)).join(' ');
+let axes = '';
+for (let i = 0; i < 12; i++) axes += `<text x="${ax(i)}" y="606" text-anchor="middle" font-size="24" fill="#6b7687">${2003 + i}</text>`;
+for (const v of [0, 20, 40, 60]) axes += `<line x1="130" x2="1490" y1="${ay(v)}" y2="${ay(v)}" stroke="#dfe3ea" stroke-width="2"/><text x="115" y="${ay(v) + 8}" text-anchor="end" font-size="24" fill="#6b7687">${v} %</text>`;
+scene('L’hypothèse clé', [
+  'Tout repose sur une hypothèse : les <b>tendances parallèles</b>.',
+  'Sans le réseau, les deux groupes auraient évolué de la même façon. On ne peut pas le vérifier directement : c’est le contrefactuel.',
+  'Mais on peut regarder <b>avant 2008</b> : les deux courbes sont basses et plates, sans écart qui se creuse. C’est rassurant.',
+  'Après, les traitées décollent : 15 % en 2010, puis plus de 60 % à partir de 2012. Le groupe de comparaison reste sous 6 %.'
+], `<h2>Les deux groupes, année par année</h2>
+<svg width="1700" height="630">${axes}
+  <rect x="${ax(5) - 50}" y="120" width="${ax(6) - ax(5) + 100}" height="440" fill="#eceff3"/>
+  <text x="${(ax(5) + ax(6)) / 2}" y="150" text-anchor="middle" font-size="22" fill="#6b7687">raccordement</text>
+  <g data-in="1"><path data-draw="1" d="${chemin(C1)}" stroke="#eb6834" stroke-width="6" fill="none"/></g>
+  <g data-in="1+0.5"><path data-draw="1+0.5" d="${chemin(T1)}" stroke="#2a78d6" stroke-width="6" fill="none"/></g>
+  <g data-in="2"><rect x="${ax(0) - 30}" y="${ay(10)}" width="${ax(4) - ax(0) + 60}" height="${ay(0) - ay(10) + 10}" rx="10" fill="none" stroke="#1baf7a" stroke-width="5"/>
+    <text x="${ax(2)}" y="${ay(10) - 16}" text-anchor="middle" font-size="30" font-weight="700" fill="#1baf7a">avant : parallèles ✔</text></g>
+  <text x="${ax(11) + 10}" y="${ay(62.1) - 20}" text-anchor="end" font-size="30" font-weight="700" fill="#2a78d6" data-in="3">Traitées</text>
+  <text x="${ax(11) + 10}" y="${ay(2.6) - 20}" text-anchor="end" font-size="30" font-weight="700" fill="#eb6834" data-in="3">Comparaison</text>
+</svg>`);
+
+// 13. Placebo
+scene('Le test placebo', [
+  'Autre vérification : le <b>test placebo</b>. On fait semblant que le réseau arrive en 2005, alors que rien ne s’est passé.',
+  'On refait la double différence sur 2003-2007. Résultat : <b>+1,3 point</b>, avec une p-valeur de <b>0,64</b>. Rien de significatif.',
+  'Bon signe : la méthode ne trouve pas d’effet là où il n’y en a pas. Attention : ça rend l’hypothèse <b>plausible</b>, ça ne la <b>prouve</b> pas.'
+], `<h2>Un faux traitement en 2005</h2>
+<div class="rangee" style="gap:60px;margin-top:30px">
+  <div class="carte" style="width:760px" data-in="0">
+    <div class="m">Période étudiée : 2003-2007</div>
+    <div style="margin-top:20px">« Avant » fictif : 2003-2004<br>« Après » fictif : 2005-2007</div>
+    <div style="margin-top:20px;font-size:30px" class="m">Aucune localité n’est raccordée.</div></div>
+  <div class="carte" style="width:640px;text-align:center" data-in="1">
+    <div class="m">Effet « placebo »</div><div class="grand g" style="margin:16px 0">+1,3 pt</div>
+    <div>p-valeur = <b>0,64</b><br><span class="g">pas d’effet ✔</span></div></div>
+</div>
+<div class="carte" style="margin-top:30px;display:inline-block;border-color:#f5c451" data-in="2">⚠ Plausible ≠ prouvé</div>`);
+
+// 14. Deux menaces
+scene('Deux pièges', [
+  'Deux choses peuvent fausser le résultat. D’abord, en 2012, un <b>nouveau satellite</b>, plus sensible, entre dans les données.',
+  'S’il voyait mieux les lumières d’un groupe que de l’autre, l’écart serait faussé. Effectivement : l’effet vaut <b>10 points</b> avant 2012, <b>56</b> après.',
+  'L’effet existe bel et bien, mais sa taille exacte dépend de l’instrument de mesure.',
+  'Ensuite, la lumière d’un village raccordé peut <b>déborder</b> sur un voisin du groupe de comparaison.',
+  'Le groupe de comparaison semble alors s’allumer un peu, on retranche trop, et l’effet est <b>sous-estimé</b>.'
+], `<h2>Ce qui pourrait fausser l’estimation</h2>
+<div class="rangee" style="gap:50px">
+  <div class="carte" style="width:800px" data-in="0">
+    <b>🛰 Changement de satellite (2012)</b>
+    <svg width="740" height="300" style="margin-top:14px">
+      ${barre(120, 250, 10.4 * 3.2, 150, '#2a78d6', '1', '+10 pts', '2010-2011')}
+      ${barre(420, 250, 56.4 * 3.2, 150, '#2747c9', '1+0.4', '+56 pts', '2012-2014')}
+    </svg></div>
+  <div class="carte" style="width:700px" data-in="3">
+    <b>💡 Lumière qui déborde</b>
+    <svg width="640" height="300" style="margin-top:14px">
+      <circle cx="180" cy="150" r="22" fill="#2a78d6"/><circle cx="180" cy="150" r="90" fill="#ffd35c" opacity=".35" data-in="3+0.5"/>
+      <circle cx="330" cy="150" r="22" fill="#eb6834"/>
+      <text x="180" y="270" text-anchor="middle" font-size="28" fill="#2a78d6">traitée</text><text x="330" y="270" text-anchor="middle" font-size="28" fill="#eb6834">voisine</text>
+      <text x="470" y="160" font-size="34" font-weight="700" fill="#c43d3d" data-in="4">effet ↓</text>
+    </svg></div>
+</div>`);
+
+// 15. Effets fixes
+const niveaux = [[8, 1], [3, 1], [6, 0], [1, 0]];
+let fx = '';
+niveaux.forEach(([n, tr], i) => { const pts = [0, 1, -0.5, 0.8, 1.5, 0.4].map((c, t) => [140 + t * 170, 470 - (n + c + (tr && t >= 3 ? 3 : 0)) * 32]);
+  fx += `<path data-in="0+${i * 0.3}" d="${pts.map((p, j) => (j ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ')}" stroke="${tr ? '#2a78d6' : '#eb6834'}" stroke-width="6" fill="none"/>`; });
+scene('Les effets fixes', [
+  'Le travail demande aussi une version avec <b>effets fixes</b>. L’idée est simple.',
+  '<b>Effets fixes de localité</b> : chaque village reçoit sa propre constante. On neutralise tout ce qui ne change pas : sa taille, sa position, sa route…',
+  '<b>Effets fixes d’année</b> : chaque année reçoit sa constante. On neutralise ce qui touche tout le monde la même année.',
+  'Résultat : <b>0,380</b>, le même effet. Normal : c’est la même idée, écrite autrement.'
+], `<h2>Comparer chaque village à lui-même</h2>
+<div class="rangee" style="gap:40px">
+  <div class="carte"><svg width="1000" height="500">${fx}
+    <line x1="650" y1="40" x2="650" y2="480" stroke="#6b7687" stroke-width="3" stroke-dasharray="10 8"/>
+    <text x="660" y="70" font-size="24" fill="#6b7687">électrification</text></svg></div>
+  <div style="display:flex;flex-direction:column;gap:24px;width:560px">
+    <div class="carte" data-in="1">🏘 <b>Localité</b> : ce qui ne change pas dans le temps</div>
+    <div class="carte" data-in="2">📅 <b>Année</b> : ce qui touche tout le monde</div>
+    <div class="carte" data-in="3" style="border-color:var(--accent)">Coefficient : <b class="a">0,380</b></div>
+  </div>
+</div>`);
+
+// 16. Erreurs-types groupées
+const ex = (v) => 160 + v * 24;
+let echelle = '';
+for (const v of [0, 10, 20, 30, 40, 50, 60]) echelle += `<line x1="${ex(v)}" y1="300" x2="${ex(v)}" y2="318" stroke="#6b7687" stroke-width="3"/><text x="${ex(v)}" y="356" text-anchor="middle" font-size="28" fill="#6b7687">${v}</text>`;
+scene('Quelle précision ?', [
+  'Dernier point technique : <b>la précision</b> du résultat.',
+  'Les 10 années d’un même village se ressemblent : un village plus lumineux que prévu une année l’est souvent l’année suivante.',
+  'Compter ces 10 observations comme 10 informations <b>indépendantes</b>, c’est surestimer la précision.',
+  'On <b>groupe</b> donc les erreurs-types par localité : l’erreur-type passe de 0,033 à <b>0,044</b>.',
+  'L’intervalle de confiance s’élargit : l’effet se situe <b>entre 29 et 47 points</b>. Il reste très net, loin de zéro.'
+], `<h2>Erreurs-types groupées par localité</h2>
+<div class="rangee" style="gap:40px">
+  <div class="carte" style="width:760px" data-in="1">
+    <div class="m" style="font-size:28px">Un village, 10 années</div>
+    <svg width="700" height="110">${[0,1,2,3,4,5,6,7,8,9].map((i) => `<rect x="${i * 68}" y="20" width="56" height="56" rx="8" fill="${i < 5 ? '#c6cdd8' : '#ffd35c'}"/>`).join('')}</svg>
+    <div style="font-size:30px">≠ 10 informations indépendantes</div></div>
+</div>
+<svg width="1700" height="380" style="margin-top:10px">
+  <line x1="120" y1="300" x2="1660" y2="300" stroke="#6b7687" stroke-width="3"/>${echelle}
+  <text x="1660" y="400" text-anchor="end" font-size="26" fill="#6b7687">points de pourcentage</text>
+  <g data-in="3"><line x1="${ex(31.6)}" x2="${ex(44.4)}" y1="170" y2="170" stroke="#9aa6b8" stroke-width="12" stroke-linecap="round"/>
+    <text x="${ex(31.6) - 20}" y="180" text-anchor="end" font-size="28" fill="#6b7687">HC1 : 32-44</text></g>
+  <g data-in="4"><line x1="${ex(29.4)}" x2="${ex(46.7)}" y1="240" y2="240" stroke="#2747c9" stroke-width="12" stroke-linecap="round"/>
+    <text x="${ex(46.7) + 20}" y="250" font-size="30" font-weight="700" fill="#2747c9">groupées : 29-47</text></g>
+  <circle cx="${ex(38)}" cy="240" r="14" fill="#2747c9" data-in="4"/><circle cx="${ex(38)}" cy="170" r="12" fill="#6b7687" data-in="3"/>
+  <line x1="${ex(0)}" x2="${ex(0)}" y1="120" y2="300" stroke="#c43d3d" stroke-width="3" stroke-dasharray="8 8" data-in="4"/>
+</svg>`);
+
+// 17. Autres résultats
+const res = (titre, val, verdict, couleur, inn) => `<div class="carte" style="width:520px" data-in="${inn}"><div class="m" style="font-size:28px">${titre}</div><div class="grand" style="font-size:84px;margin:16px 0;color:${couleur}">${val}</div><div style="font-size:30px">${verdict}</div></div>`;
+scene('Trois autres résultats', [
+  'Même méthode, <b>trois autres résultats</b>.',
+  'La <b>quantité de lumière</b> augmente aussi, mais on ne la mesure que dans les villages éclairés au moins une fois : un échantillon sélectionné.',
+  'Les <b>écoles électrifiées</b> : +0,16 par village. Mais l’effet est fragile : il vient surtout d’une baisse dans le groupe de comparaison.',
+  'Le <b>nombre d’élèves</b> : aucun effet détectable. Les écoles ont l’électricité, mais il n’y a pas plus d’élèves.'
+], `<h2>Lumière, écoles, élèves</h2>
+<div class="rangee" style="gap:36px">
+  ${res('Intensité lumineuse', '+0,43', '✔ significatif, sur 139 villages', '#2a78d6', '1')}
+  ${res('Écoles électrifiées', '+0,16', '⚠ fragile', '#d49a00', '2')}
+  ${res('Élèves du primaire', '−6,7', '✘ pas d’effet détectable', '#6b7687', '3')}
+</div>`);
+
+// 18. Lumière ≠ activité
+scene('Le piège final', [
+  'Alors, l’électricité a-t-elle augmenté <b>l’activité économique</b> ? Attention au piège.',
+  'Un seul lampadaire suffit à rendre un village visible depuis l’espace, sans qu’aucune entreprise ne produise davantage.',
+  'La lumière montre que le réseau est <b>utilisé</b>. Pour parler d’activité économique, il faudrait mesurer revenus, emplois ou entreprises.'
+], `<h2>Plus de lumière = plus d’activité ?</h2>
+<div class="rangee" style="gap:80px;align-items:center;margin-top:30px">
+  <div class="carte" style="text-align:center;width:520px" data-in="1"><div style="font-size:150px">💡</div>Un lampadaire<br><b>visible depuis l’espace</b></div>
+  <div style="font:700 120px Titre;color:#c43d3d" data-in="1+0.6">≠</div>
+  <div class="carte" style="text-align:center;width:520px" data-in="1+1"><div style="font-size:150px">🏭</div>Activité économique<br><b>non mesurée ici</b></div>
+</div>`);
+
+// 19. Récapitulatif
+const point = (n, txt, inn) => `<div class="carte" style="display:flex;gap:26px;align-items:center;padding:20px 30px" data-in="${inn}"><b class="a" style="font:700 48px Titre;width:40px">${n}</b><span>${txt}</span></div>`;
+scene('Récapitulatif', [
+  'Récapitulons.',
+  '1. On compare des localités raccordées <b>tôt</b> à des localités raccordées <b>plus tard</b>.',
+  '2. La double différence retire l’écart de départ et la tendance commune : <b>+38 points</b>.',
+  '3. Ça repose sur les <b>tendances parallèles</b> : plausibles, jamais prouvées.',
+  '4. Avec des erreurs-types groupées, l’effet est entre <b>29 et 47 points</b>.',
+  '5. Plus de lumière, ce n’est pas forcément plus d’activité économique. Bonne préparation pour l’oral !'
+], `<h2>À retenir</h2>
+<div style="display:flex;flex-direction:column;gap:18px;width:1500px">
+  ${point(1, 'Traitées 2008-2009 contre comparaison 2015-2017', '1')}
+  ${point(2, 'Double différence : 39,0 − 0,9 = <b>+38 points</b>', '2')}
+  ${point(3, 'Hypothèse : tendances parallèles (placebo rassurant, pas une preuve)', '3')}
+  ${point(4, 'Erreurs-types groupées : intervalle de 29 à 47 points', '4')}
+  ${point(5, 'Lumière ≠ activité économique', '5')}
+</div>`);
+
+// ----------------------------------------------------------------- minutage
+const duree = (txt) => { const n = txt.replace(/<[^>]+>/g, '').length; return Math.max(4.2, n / 15 + 1.6); };
+let T0 = 0;
+S.forEach((s) => { s.debut = T0; let t = 0.8; s.cap = s.caps.map((c) => { const d = duree(c), r = [t, t + d]; t += d; return r; }); s.fin = T0 + t + 1.2; T0 = s.fin; });
+const TOTAL = T0;
+
+// --------------------------------------------------------------- construction
+const hote = document.getElementById('scenes');
+S.forEach((s, i) => {
+  const d = document.createElement('section'); d.className = 'scene';
+  d.innerHTML = `<div class="etiquette"><b>${i + 1}/${S.length}</b> · ${s.chap}</div>` + s.html;
+  hote.append(d); s.el = d;
+  d.querySelectorAll('path[data-draw]').forEach((p) => { const L = p.getTotalLength ? p.getTotalLength() : 1000; p.dataset.long = L; p.style.strokeDasharray = p.getAttribute('stroke-dasharray') ? p.getAttribute('stroke-dasharray') : L; });
+});
+const temps = (s, code) => { const [k, off] = String(code).split('+'); const c = s.cap[+k] || s.cap[0]; return c[0] + (off ? +off : 0); };
+const ease = (x) => { x = Math.min(1, Math.max(0, x)); return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
+
+window.DUREE = TOTAL;
+window.render = function (T) {
+  S.forEach((s) => {
+    const loc = T - s.debut, actif = T >= s.debut - 0.01 && T < s.fin;
+    const opa = actif ? Math.min(ease(loc / 0.6), ease((s.fin - T) / 0.6)) : 0;
+    s.el.style.opacity = opa; s.el.style.visibility = opa > 0 ? 'visible' : 'hidden';
+    if (!opa) return;
+    s.el.querySelectorAll('[data-in]').forEach((e) => { const p = ease((loc - temps(s, e.dataset.in)) / 0.7); e.style.opacity = p; if (e.tagName !== 'g' && e.tagName !== 'path' && e.tagName !== 'circle' && e.tagName !== 'rect' && e.tagName !== 'text' && e.tagName !== 'tr') e.style.transform = `translateY(${(1 - p) * 24}px)`; });
+    s.el.querySelectorAll('[data-grow]').forEach((e) => { const p = ease((loc - temps(s, e.dataset.grow)) / 1.0); e.style.transform = `scaleY(${p})`; });
+    s.el.querySelectorAll('path[data-draw]').forEach((e) => { const p = ease((loc - temps(s, e.dataset.draw)) / 1.4), L = +e.dataset.long;
+      if (e.getAttribute('stroke-dasharray')) { e.style.opacity = p; } else { e.style.strokeDashoffset = L * (1 - p); } });
+    const c = s.cap.findIndex(([a, b]) => loc >= a && loc < b), st = document.querySelector('#sous-titre p');
+    const ci = c >= 0 ? c : (loc < s.cap[0][0] ? -1 : s.cap.length - 1);
+    if (st.dataset.k !== s.debut + ':' + ci) { st.dataset.k = s.debut + ':' + ci; st.innerHTML = ci >= 0 ? s.caps[ci] : ''; }
+    if (ci >= 0) { const [a, b] = s.cap[ci]; st.style.opacity = Math.min(ease((loc - a) / 0.35), ci === s.caps.length - 1 ? 1 : ease((b - loc) / 0.25)); } else st.style.opacity = 0;
+
+  });
+  document.getElementById('avance').style.width = (100 * T / TOTAL) + '%';
+};
+window.render(0);
+</script>
+</body>
+</html>
