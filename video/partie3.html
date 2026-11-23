@@ -429,8 +429,12 @@ scene('Récapitulatif', [
 
 // ----------------------------------------------------------------- minutage
 const duree = (txt) => { const n = txt.replace(/<[^>]+>/g, '').length; return Math.max(4.2, n / 15 + 1.6); };
+// Avec la voix off, window.DUREES (injecté par video/rendre.cjs) donne la durée de chaque phrase parlée.
+window.CAPS = S.map((s) => s.caps);
+const DUREES = window.DUREES || null;
 let T0 = 0;
-S.forEach((s) => { s.debut = T0; let t = 0.8; s.cap = s.caps.map((c) => { const d = duree(c), r = [t, t + d]; t += d; return r; }); s.fin = T0 + t + 1.2; T0 = s.fin; });
+S.forEach((s, i) => { s.debut = T0; let t = 0.8; s.cap = s.caps.map((c, j) => { const d = DUREES ? DUREES[i][j] : duree(c), r = [t, t + d]; t += d; return r; }); s.fin = T0 + t + 1.2; T0 = s.fin; });
+window.DEBUTS = S.map((s) => s.cap.map((c) => s.debut + c[0]));
 const TOTAL = T0;
 
 // --------------------------------------------------------------- construction

@@ -4,16 +4,21 @@ const path = require('path'), fs = require('fs'), { spawn } = require('child_pro
 const { chromium } = require('playwright');
 (async () => {
   const [, , sortie, fpsArg, essais] = process.argv;
+  const audio = process.env.AUDIO || '';
   const fps = +(fpsArg || 24);
   const b = await chromium.launch();
   const page = await (await b.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 })).newPage();
   page.on('pageerror', (e) => console.log('pageerror', e.message));
+  // Avec voix off : les durées des phrases parlées fixent le minutage des scènes.
+  const fd = path.join(__dirname, 'durees.json');
+  if (fs.existsSync(fd)) await page.addInitScript((d) => { window.DUREES = d; }, JSON.parse(fs.readFileSync(fd, 'utf8')));
   await page.goto('file://' + path.join(__dirname, 'partie3.html'));
   await page.evaluate(() => document.fonts.ready);
   const duree = await page.evaluate(() => window.DUREE);
   console.log('durée', duree.toFixed(1), 's');
   if (essais) { for (const t of essais.split(',')) { await page.evaluate((t) => window.render(t), +t); await page.screenshot({ path: sortie.replace(/\.mp4$/, '') + '-' + t + '.png' }); } await b.close(); return; }
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
+    ...(audio ? ['-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '128k', '-shortest'] : []),
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', sortie], { stdio: ['pipe', 'inherit', 'inherit'] });
   const n = Math.ceil(duree * fps);
   for (let i = 0; i < n; i++) {
